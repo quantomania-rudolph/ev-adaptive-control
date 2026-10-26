@@ -1,0 +1,19 @@
+# CODEOWNERS: GitHub automatically requests a review from these people when a pull
+# request touches the matching files. Replace the placeholders with real GitHub
+# usernames AFTER your teammates have joined the repo.
+
+# Segment owners
+/src/evcontrol/datagen/      @REPLACE-datagen-owner
+/tests/datagen/              @REPLACE-datagen-owner
+
+/src/evcontrol/actuator/     @REPLACE-actuator-owner
+/tests/actuator/             @REPLACE-actuator-owner
+
+/src/evcontrol/evaluation/   @REPLACE-evaluation-owner
+/tests/evaluation/           @REPLACE-evaluation-owner
+
+# Shared files: changes here affect everybody, so the repo admin should review them.
+/.github/                    @REPLACE-repo-admin
+/pyproject.toml              @REPLACE-repo-admin
+/src/evcontrol/pipeline.py   @REPLACE-repo-admin
+/tests/integration/          @REPLACE-repo-admin

@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evcontrol"
+version = "0.1.0"
+description = "EV adaptive control under input/state constraints: data generation, actuator sim, evaluation"
+requires-python = ">=3.10"
+# Keep runtime dependencies minimal. Add to this list ONLY what your segment needs,
+# and mention it in your pull request so everyone's environment stays in sync.
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+# Tools used for development and CI, not needed to run the simulation itself.
+dev = ["pytest>=7", "pytest-cov>=4", "ruff>=0.4"]
+
+# "src layout": the package lives in src/evcontrol. This forces tests to import the
+# *installed* package, which catches packaging mistakes before they reach other people.
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: tests that cross segment boundaries (datagen -> actuator -> evaluation)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+# E/F = basic errors, I = import sorting, B = likely bugs
+select = ["E", "F", "I", "B"]

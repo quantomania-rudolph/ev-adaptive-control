@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Data and results: big or regenerable files do NOT belong in git.
+# Generate them with the datagen segment, or share them via the team drive.
+data/raw/*
+data/processed/*
+results/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!results/.gitkeep
+*.npz
+*.h5
+*.mat
