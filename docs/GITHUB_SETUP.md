@@ -88,4 +88,11 @@ git checkout main && git pull
 git tag v0.2.0
 git push origin v0.2.0
 ```
-`release.yml` re-tests, builds, and attaches the package to a GitHub Release page.
+`release.yml` runs the unit tests, then the integration tests, builds the package, and attaches that build to a GitHub Release.
+
+A unit test has to pass. A skipped or failing unit test stops the release. The three placeholder tests are skipped on purpose, so a plain tag will not publish until those tests are real or you explicitly override the gate. An override is an annotated tag whose message starts with a reason:
+```bash
+git tag -a v0.2.0 -m "Override-Unit-Tests: placeholder segment tests are still skipped"
+git push origin v0.2.0
+```
+The Actions tab can run the same checks without publishing: **Release → Run workflow**. Set "Deploy even though unit tests failed or were skipped" and fill in the reason.

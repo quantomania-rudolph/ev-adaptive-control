@@ -46,7 +46,7 @@ pull request and tell the team. That is what the integration tests are for.
 | Workflow | Trigger | What it does |
 |----------|---------|--------------|
 | `ci.yml` | every push, every PR into `main` | lint -> unit tests per segment (py3.10 + 3.12) -> integration tests -> build package |
-| `release.yml` | pushing a tag like `v0.2.0` | re-runs tests, builds the package, attaches it to a GitHub Release |
+| `release.yml` | pushing a tag like `v0.2.0` | unit tests must pass (a skip or failure blocks the release unless the tag message contains `Override-Unit-Tests:`), then integration tests, build, and a GitHub Release |
 
 ## Adding your own work
 

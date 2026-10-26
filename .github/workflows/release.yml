@@ -1,31 +1,103 @@
 name: Release
 
-# The "CD" (deployment) half. It runs only when someone pushes a version tag like v0.2.0.
-# Result: a GitHub Release page with the built package attached, so everyone can
-# `pip install` a known-good, frozen version (handy for reproducing paper results).
-#
-# To cut a release (after main is green):
-#   git tag v0.2.0
-#   git push origin v0.2.0
+# CD. A version tag (v0.2.0) publishes a GitHub Release only after unit tests pass.
+# A skipped or failing unit test stops the release. To publish anyway, put an
+# explicit reason on an annotated tag:
+#   git tag -a v0.2.0 -m "Override-Unit-Tests: why this can ship"
+# The same override exists on workflow_dispatch (it checks and builds, and does not publish).
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      override_unit_tests:
+        description: "Deploy even though unit tests failed or were skipped"
+        type: boolean
+        required: true
+        default: false
+      override_reason:
+        description: "Required reason when overriding the unit-test gate"
+        type: string
+        required: false
+        default: ""
 
 permissions:
-  contents: write # needed to create the release
+  contents: read
 
 jobs:
-  release:
+  verify:
+    name: Unit tests, suite, and package build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: python -m pip install build ".[dev]"
-      # Never publish something that doesn't pass its own tests.
-      - run: pytest
-      - run: python -m build
+
+      - name: Unit tests must pass before deployment
+        env:
+          OVERRIDE_UNIT_TESTS: ${{ github.event.inputs.override_unit_tests || '' }}
+          OVERRIDE_REASON: ${{ github.event.inputs.override_reason || '' }}
+        run: |
+          set -euo pipefail
+          enabled=false
+          reason=""
+          if [ "${OVERRIDE_UNIT_TESTS}" = "true" ]; then
+            enabled=true
+            reason="${OVERRIDE_REASON}"
+          fi
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tag_reason="$(git for-each-ref "refs/tags/${GITHUB_REF_NAME}" --format='%(contents)' | sed -n 's/^Override-Unit-Tests:[[:space:]]*//p' | head -n 1)"
+            if [ -n "${tag_reason}" ]; then
+              enabled=true
+              reason="${tag_reason}"
+            fi
+          fi
+          if [ "${enabled}" = "true" ] && [ -z "${reason}" ]; then
+            echo "Unit-test override requires an explicit reason."
+            exit 1
+          fi
+          set +e
+          pytest -m "not integration" --fail-on-skipped
+          status=$?
+          set -e
+          if [ "${status}" -ne 0 ]; then
+            if [ "${enabled}" = "true" ]; then
+              echo "Unit-test gate overridden: ${reason}"
+              exit 0
+            fi
+            echo "Unit tests must pass before deployment. Skipped unit tests do not count."
+            echo "Override with an annotated tag message line: Override-Unit-Tests: <reason>"
+            exit "${status}"
+          fi
+
+      - name: Integration tests
+        run: pytest -m integration
+
+      - name: Build package
+        run: python -m build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-dist
+          path: dist/
+
+  publish:
+    name: Publish GitHub Release
+    needs: verify
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-dist
+          path: dist
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*
