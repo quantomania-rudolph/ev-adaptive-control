@@ -42,6 +42,7 @@ jobs:
         env:
           OVERRIDE_UNIT_TESTS: ${{ github.event.inputs.override_unit_tests || '' }}
           OVERRIDE_REASON: ${{ github.event.inputs.override_reason || '' }}
+          EVCONTROL_FAIL_ON_SKIPPED: "1"
         run: |
           set -euo pipefail
           enabled=false
@@ -62,7 +63,7 @@ jobs:
             exit 1
           fi
           set +e
-          pytest -m "not integration" --fail-on-skipped
+          pytest -m "not integration"
           status=$?
           set -e
           if [ "${status}" -ne 0 ]; then

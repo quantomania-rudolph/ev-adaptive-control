@@ -1,5 +1,7 @@
 """The release gate fails when a unit test is skipped, and passes when it runs."""
 
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -12,21 +14,22 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _run_gate(directory: Path) -> subprocess.CompletedProcess[str]:
+    shutil.copy(ROOT / "conftest.py", directory / "conftest.py")
+    env = os.environ.copy()
+    env["EVCONTROL_FAIL_ON_SKIPPED"] = "1"
     return subprocess.run(
         [
             sys.executable,
             "-m",
             "pytest",
             str(directory),
-            "--rootdir",
-            str(ROOT),
-            "--fail-on-skipped",
             "--override-ini",
             "addopts=",
             "-p",
             "no:cacheprovider",
         ],
-        cwd=ROOT,
+        cwd=directory,
+        env=env,
         capture_output=True,
         text=True,
         check=False,
@@ -48,5 +51,6 @@ def test_skipped_unit_test_blocks_the_deployment_gate(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     result = _run_gate(tmp_path)
-    assert result.returncode != 0, result.stdout + result.stderr
-    assert "deployment gate" in result.stdout
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0, combined
+    assert "deployment gate" in combined

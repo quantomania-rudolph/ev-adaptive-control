@@ -1,23 +1,13 @@
-"""Pytest options shared by local runs and the release workflow."""
+"""Release gate: skipped tests fail the run only when deployment asks for that."""
+
+import os
 
 import pytest
 
 
-def pytest_addoption(parser: pytest.Parser) -> None:
-    parser.addoption(
-        "--fail-on-skipped",
-        action="store_true",
-        default=False,
-        help=(
-            "Fail if any collected test is skipped. The release workflow uses this "
-            "so unit tests must pass before deployment."
-        ),
-    )
-
-
 @pytest.hookimpl(trylast=True)
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    if not session.config.getoption("--fail-on-skipped"):
+    if os.environ.get("EVCONTROL_FAIL_ON_SKIPPED") != "1":
         return
     reporter = session.config.pluginmanager.getplugin("terminalreporter")
     skipped = []
