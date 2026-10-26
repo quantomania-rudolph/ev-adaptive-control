@@ -7,9 +7,9 @@ so each person can build their own segment, with automatic tests that tell us wh
 
 ```
 src/evcontrol/
-  datagen/      references + bounded disturbances            (owner: ______)
-  actuator/     u = sat(u_c), delta_u = u - u_c, EV limits   (owner: ______)
-  evaluation/   RMSE, saturation fraction, UUB radius, ...   (owner: ______)
+  datagen/      references + bounded disturbances            (owners: TaehwanLee-KR, kaiyoshi08-dotcom)
+  actuator/     u = sat(u_c), delta_u = u - u_c, EV limits   (owners: TaehwanLee-KR, kaiyoshi08-dotcom)
+  evaluation/   RMSE, saturation fraction, UUB radius, ...   (owner: LiamJCurtis)
   pipeline.py   placeholder glue that runs all three together
 tests/
   datagen/  actuator/  evaluation/   one folder of unit tests per segment
