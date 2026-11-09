@@ -1,0 +1,9 @@
+fastsim==3.1.0
+gym_electric_motor==3.0.3
+gymnasium==1.4.0
+matplotlib==3.11.2
+numpy==2.5.4
+pandas==3.1.0
+pyarrow==26.0.0
+PyYAML==6.0.3
+scipy==1.18.1

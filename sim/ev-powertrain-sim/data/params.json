@@ -1,0 +1,169 @@
+{
+ "_about": "True plant values (what the physics uses) and default settings of everything else. Source = file that defines it.",
+ "plant_true": {
+  "p": {
+   "value": 3.0,
+   "unit": "",
+   "source": "plant.py / Gym-Electric-Motor 3.0.3 PMSM defaults"
+  },
+  "Ld": {
+   "value": 0.00037,
+   "unit": "H",
+   "source": "plant.py / Gym-Electric-Motor 3.0.3 PMSM defaults"
+  },
+  "Lq": {
+   "value": 0.0012,
+   "unit": "H",
+   "source": "plant.py / Gym-Electric-Motor 3.0.3 PMSM defaults"
+  },
+  "R": {
+   "value": 0.018,
+   "unit": "ohm",
+   "source": "plant.py / Gym-Electric-Motor 3.0.3 PMSM defaults"
+  },
+  "psi": {
+   "value": 0.066,
+   "unit": "Wb",
+   "source": "plant.py / Gym-Electric-Motor 3.0.3 PMSM defaults"
+  },
+  "J": {
+   "value": 0.53883,
+   "unit": "kg m^2",
+   "source": "plant.py / Gym-Electric-Motor 3.0.3 PMSM defaults"
+  },
+  "a_load": {
+   "value": 0.0,
+   "unit": "N m",
+   "source": "plant.py / Gym-Electric-Motor 3.0.3 PMSM defaults"
+  },
+  "b_load": {
+   "value": 0.02,
+   "unit": "N m s/rad",
+   "source": "plant.py / Gym-Electric-Motor 3.0.3 PMSM defaults"
+  },
+  "c_load": {
+   "value": 0.0001,
+   "unit": "N m s^2/rad^2",
+   "source": "plant.py / Gym-Electric-Motor 3.0.3 PMSM defaults"
+  },
+  "tau": {
+   "value": 0.0001,
+   "unit": "s",
+   "source": "plant.py / Gym-Electric-Motor 3.0.3 PMSM defaults"
+  }
+ },
+ "plant_limits": {
+  "V_dc_nominal_V": 300.0,
+  "voltage_ceiling_V": 173.20508075688775,
+  "current_limit_A": 400.0,
+  "speed_limit_rad_s": 418.879,
+  "note": "ceiling = V_dc/sqrt(3) (inscribed disc of the hexagon); radial projection onto the disc"
+ },
+ "cycle_runs_note": "Cycle runs replace J and the load terms with a fitted vehicle (cycles.fit_vehicle_to_motor); see dataset.params_for().",
+ "controller_default": {
+  "mode": "naive",
+  "governor": false,
+  "vdc_aware": false,
+  "bms_aware": false,
+  "angle_advance": true,
+  "delay_steps": 1,
+  "gamma": 2e-05,
+  "k_i": 3.0,
+  "sigma": 2.0,
+  "d_gain_by_L": false,
+  "clamp_psi": false,
+  "i_lim": 250.0,
+  "speed_bw": 20.0,
+  "gov_factor": 0.75,
+  "tau": 0.0001,
+  "p": 3,
+  "eta": 0.9
+ },
+ "belief_ranges": {
+  "dR_range": [
+   -0.15,
+   0.4
+  ],
+  "dL_range": [
+   0.0,
+   0.25
+  ],
+  "dJ_range": [
+   -0.2,
+   0.2
+  ],
+  "dpsi_range": [
+   -0.1,
+   0.1
+  ],
+  "psi_start_frac": 0.7,
+  "psi_range": [
+   0.03,
+   0.1
+  ],
+  "exact": false
+ },
+ "sensors": {
+  "tau": 0.0001,
+  "p": 3,
+  "identity": false,
+  "i_range_a": 400.0,
+  "adc_bits": 12,
+  "i_gain_err": 0.01,
+  "i_offset_a": 2.0,
+  "i_noise_lsb": 1.0,
+  "two_sensor": false,
+  "theta_offset_rad": 0.017453292519943295,
+  "theta_noise_rad": 0.005235987755982988,
+  "theta_ripple_rad": 0.003490658503988659,
+  "pll_wn": 300.0,
+  "pll_zeta": 0.707,
+  "vdc_range_v": 500.0,
+  "vdc_gain_err": 0.005,
+  "vdc_noise_v": 0.5,
+  "vdc_corner_hz": 500.0,
+  "ref_quant": 0.0,
+  "ref_hold_s": 0.0
+ },
+ "inverter": {
+  "tau": 0.0001,
+  "delay_steps": 1,
+  "dead_time_s": 2e-06,
+  "device_drop_v": 1.5,
+  "smooth_band_a": 1.0,
+  "compensation": 0.7,
+  "enabled": true
+ },
+ "bms": {
+  "period_s": 0.05,
+  "latency_s": 0.02,
+  "quant_a": 1.0,
+  "rel_err": 0.05,
+  "enabled": true
+ },
+ "battery_default": {
+  "ns": 80.0,
+  "q_as": 216000.0,
+  "R0_25": 0.08,
+  "R1": 0.047999999999999994,
+  "tau1": 20.0,
+  "Rc": 0.005,
+  "C": 0.002,
+  "i_dis": 250.0,
+  "i_chg": 150.0,
+  "r_inv": 0.008,
+  "p_idle": 30.0,
+  "c_th": 400000.0,
+  "r_th": 0.05,
+  "t_amb": 298.15,
+  "v_min": 20.0,
+  "soc": 0.5,
+  "T": 298.15,
+  "v1": 0.0,
+  "i_b": 0.0,
+  "v_dc": 302.4,
+  "n_nominal": 302.4
+ },
+ "battery_fit_file": "data/tum_battery_fit.json",
+ "units_convention": "SI: V, A, Wb, H, ohm, rad/s (mechanical), s, N m, W, J. Electrical speed = p * mechanical speed."
+}

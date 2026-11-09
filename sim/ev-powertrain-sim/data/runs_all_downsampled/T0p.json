@@ -1,0 +1,55 @@
+{
+  "name": "T0p",
+  "source": "TUM Tesla Model 3 track_0.csv",
+  "mode": "aw",
+  "governor": true,
+  "vdc_aware": true,
+  "battery": true,
+  "derate": [
+    118.5,
+    3.0,
+    0.02
+  ],
+  "tau": 0.0002,
+  "log_every": 25,
+  "tau_log": 0.005,
+  "rows": 56580,
+  "steps": 1414500,
+  "wall_s": 402.6,
+  "vehicle": {
+    "k": 7.983193330092587,
+    "mass": 130.7739423896419,
+    "crr": 0.01,
+    "cda": 0.62,
+    "rho": 1.2,
+    "drivetrain_b": 0.02,
+    "mass_eq": 130.7739423896419,
+    "T_peak": 113.22812915328711,
+    "T_q": 63.11249999986263,
+    "frac_over_cap": 0.006007067137809187,
+    "omega_peak": 190.0,
+    "road_scale": 1.0
+  },
+  "T_cap": 74.25000000000001,
+  "duration_s": 282.90000000000003,
+  "report": [
+    {
+      "code": "speed_column",
+      "level": "info",
+      "msg": "used 'speed' (ms)",
+      "n": 0
+    },
+    {
+      "code": "grade_from_elevation",
+      "level": "info",
+      "msg": "grade = 30 s elevation change / distance, median-filtered, capped at +-15%; 0 samples hit the cap",
+      "n": 0
+    },
+    {
+      "code": "torque_demand_over_capability",
+      "level": "warn",
+      "msg": "0.60% of samples need more than 74 N.m; the current limit will clip them (logged as M4/M5)",
+      "n": 1
+    }
+  ]
+}

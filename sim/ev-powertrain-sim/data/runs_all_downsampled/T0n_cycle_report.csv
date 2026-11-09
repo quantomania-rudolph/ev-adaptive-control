@@ -1,0 +1,4 @@
+code,level,msg,n
+speed_column,info,used 'speed' (ms),0
+grade_from_elevation,info,"grade = 30 s elevation change / distance, median-filtered, capped at +-15%; 0 samples hit the cap",0
+torque_demand_over_capability,warn,0.60% of samples need more than 74 N.m; the current limit will clip them (logged as M4/M5),1

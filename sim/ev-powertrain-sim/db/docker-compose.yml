@@ -1,0 +1,17 @@
+# Fresh TimescaleDB for the powertrain data. No old password needed: this creates a NEW database in a Docker volume.
+#   1) copy db/.env.example to db/.env and put a password you will remember in it
+#   2) docker compose -f db/docker-compose.yml --env-file db/.env up -d
+#   3) psql "postgresql://postgres:<password>@localhost:5432/powertrain"
+# Image tag is pinned; check it still exists on Docker Hub before first use (UNTESTED from the build sandbox).
+services:
+  tsdb:
+    image: timescale/timescaledb:2.17.2-pg16
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in db/.env}
+      POSTGRES_DB: powertrain
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["tsdata:/var/lib/postgresql/data"]
+    shm_size: 1gb
+    command: ["postgres", "-c", "shared_buffers=1GB", "-c", "work_mem=64MB", "-c", "max_wal_size=4GB", "-c", "checkpoint_timeout=15min"]
+volumes:
+  tsdata:

@@ -1,0 +1,574 @@
+<meta charset="utf-8">
+<title>Powertrain Runaway Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout concept: an instrument panel. A sticky transport bar (scenario, play, time) drives every chart and the powertrain map at once. */
+:root{
+  --bg:#f2f5f8; --surface:#ffffff; --surface2:#e9eef3; --ink:#13202d; --muted:#556577; --line:#d5dde5; --focus:#1d5fa8;
+  --c-naive:#c8442f; --c-robust:#c99a12; --c-aw:#2b6cb0; --c-awgov:#2a9d6f; --c-base:#13202d;
+  --ok:#1f7a55; --warn:#a96a00; --bad:#b3341f; --okbg:#e3f3ec; --warnbg:#fbf0db; --badbg:#fae6e1; --band:rgba(200,68,47,.10);
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif; --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e151d; --surface:#16202b; --surface2:#1e2a37; --ink:#e5ecf3; --muted:#9aabbc; --line:#2b3948; --focus:#6fb0f0;
+  --c-naive:#d4553f; --c-robust:#bf9210; --c-aw:#3f86d0; --c-awgov:#2fa878; --c-base:#e5ecf3;
+  --ok:#52c394; --warn:#e0a53a; --bad:#f08a76; --okbg:#143327; --warnbg:#3a2d12; --badbg:#3d1d17; --band:rgba(212,85,63,.16); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e151d; --surface:#16202b; --surface2:#1e2a37; --ink:#e5ecf3; --muted:#9aabbc; --line:#2b3948; --focus:#6fb0f0;
+  --c-naive:#d4553f; --c-robust:#bf9210; --c-aw:#3f86d0; --c-awgov:#2fa878; --c-base:#e5ecf3;
+  --ok:#52c394; --warn:#e0a53a; --bad:#f08a76; --okbg:#143327; --warnbg:#3a2d12; --badbg:#3d1d17; --band:rgba(212,85,63,.16); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;margin:0;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:8px 64px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:.01em;text-wrap:balance;margin:0}
+h1{font-size:clamp(34px,6vw,58px);line-height:1;text-transform:uppercase}
+h2{font-size:clamp(25px,3.4vw,34px);line-height:1.05;text-transform:uppercase}
+h3{font-size:19px;line-height:1.15}
+p{margin:0}
+.mono{font-family:var(--f-mono)}
+.num{font-variant-numeric:tabular-nums}
+section{padding-top:44px}
+.sechead{display:flex;flex-direction:column;gap:8px;margin-bottom:18px;max-width:78ch}
+.sechead p{color:var(--muted)}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+/* hero */
+.hero{padding-top:30px;display:grid;gap:22px}
+.hero p.lead{font-size:clamp(16px,1.9vw,19px);max-width:68ch}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.fact b{font-family:var(--f-display);font-size:34px;line-height:1;font-weight:700}
+.fact span{font-size:13px;color:var(--muted)}
+.fact.bad b{color:var(--bad)} .fact.good b{color:var(--ok)}
+/* transport bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:26px;display:grid;gap:10px;box-shadow:0 6px 18px -12px rgba(0,0,0,.35)}
+.bar-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;flex-wrap:wrap;gap:6px}
+button{font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;min-height:36px}
+button:hover{border-color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chart header>button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+button.go{background:var(--focus);border-color:var(--focus);color:#fff;font-weight:600}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.scrub{display:flex;align-items:center;gap:10px;flex:1 1 280px;min-width:0}
+input[type=range]{flex:1;min-width:0;accent-color:var(--focus)}
+.time{font-family:var(--f-mono);font-size:13px;min-width:7.5em;text-align:right}
+.scendesc{font-size:13.5px;color:var(--muted)}
+/* cards (powertrain map) */
+.map{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.node{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 12px 10px;text-align:left;display:flex;flex-direction:column;gap:8px;min-height:176px;width:100%}
+.node:hover{border-color:var(--muted)}
+.node[aria-pressed="true"]{border-color:var(--focus);box-shadow:0 0 0 2px var(--focus)}
+.node.alert{background:var(--badbg)}
+.node .nh{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.node h3{font-size:20px}
+.node .sub{font-size:12.5px;color:var(--muted);margin-top:-2px}
+.pill{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--okbg);color:var(--ok);white-space:nowrap;flex:none}
+.pill.bad{background:var(--badbg);color:var(--bad);border:1px solid var(--bad)}
+.pill.off{background:var(--surface2);color:var(--muted)}
+.live{display:grid;gap:3px;margin:0;padding:0;list-style:none}
+.live li{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.live li span:first-child{color:var(--muted)}
+.live li span:last-child{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gapline{margin-top:auto;border-top:1px dashed var(--line);padding-top:6px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.gapline b{font-family:var(--f-mono);font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gapline b.hot{color:var(--bad)}
+@media(min-width:900px){.node.arrow::after{content:"\2192";position:absolute;right:-11px;top:46%;font-size:16px;color:var(--muted);background:var(--bg);border-radius:50%;width:16px;text-align:center;line-height:16px;z-index:2}}
+.flowrow{font-size:13px;color:var(--muted);margin:10px 0 0;max-width:90ch}
+.detail{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:12px}
+.detail .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.detail .watch{background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:14px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface2);position:sticky;top:0}
+td.v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+tr.isgap td:first-child{font-weight:600}
+td.nm{font-family:var(--f-mono);white-space:nowrap}
+/* charts */
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:14px}
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 12px 8px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.chart.wide{grid-column:1/-1}
+.chart header{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.chart h3{font-size:18px}
+.chart .cap{font-size:13px;color:var(--muted);max-width:70ch}
+.legend{display:flex;flex-wrap:wrap;gap:6px 10px}
+.lg{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;border:1px solid var(--line);border-radius:99px;padding:2px 10px 2px 8px;background:var(--surface);min-height:28px;cursor:pointer}
+.lg[aria-pressed="false"]{opacity:.4;text-decoration:line-through}
+.lg svg{flex:none}
+.lg .val{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+svg.plot{display:block;width:100%;touch-action:pan-y;cursor:crosshair}
+svg text{fill:var(--muted);font-family:var(--f-mono);font-size:10.5px}
+.na{background:var(--surface2);border:1px dashed var(--muted);border-radius:8px;padding:16px;color:var(--muted);font-size:14px}
+/* bounded + honesty */
+.callout{border:1px solid var(--line);border-left:4px solid var(--warn);background:var(--surface);border-radius:6px;padding:12px 14px;display:grid;gap:6px}
+.callout.good{border-left-color:var(--ok)}
+.callout h3{font-size:18px}
+.callout ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.chip{font-family:var(--f-mono);font-size:11px;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.chip.ok{background:var(--okbg);color:var(--ok)} .chip.bad{background:var(--badbg);color:var(--bad)} .chip.warn{background:var(--warnbg);color:var(--warn)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
+input[type=search]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-height:38px;width:100%;max-width:420px}
+footer{margin-top:50px;color:var(--muted);font-size:13px;max-width:80ch}
+@media(max-width:560px){.node{min-height:0}.time{min-width:0;text-align:left}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">ENGR110H &middot; Adaptive control under input and state constraints &middot; Coding team</div>
+    <h1>What happens when the powertrain can't deliver what the controller asks?</h1>
+    <p class="lead">An adaptive controller learns one motor number while the car drives. When the battery or inverter suddenly can't supply the voltage it asked for, a plain controller blames its own number, keeps changing it, and runs away. This page replays that failure next to the protected controllers, and shows every channel the powertrain exposes along the way.</p>
+    <div class="facts" id="facts"></div>
+  </header>
+
+  <div class="bar" role="region" aria-label="Playback controls">
+    <div class="bar-row">
+      <div class="seg" id="scenseg" role="group" aria-label="Scenario"></div>
+    </div>
+    <div class="bar-row">
+      <button class="go" id="play" type="button">Play from start</button>
+      <div class="scrub"><input id="scrub" type="range" min="0" max="1000" value="1000" aria-label="Time"><span class="time num" id="timelabel"></span></div>
+    </div>
+    <div class="scendesc" id="scendesc"></div>
+  </div>
+
+  <section id="map">
+    <div class="sechead">
+      <div class="eyebrow">1 &middot; The whole powertrain</div>
+      <h2>Every stage, with its live numbers</h2>
+      <p>Read left to right, then down: the request becomes a voltage demand, the limiter cuts it to what exists, the motor makes torque, and the battery and DC link set how much voltage exists. Each card shows its numbers at the moment on the time bar. The line at the bottom of a card is the gap it hands on: delivered minus requested. Click a card to see every channel it exposes.</p>
+    </div>
+    <div class="bar-row" style="margin-bottom:12px"><span class="eyebrow">Show the map for run</span><div class="seg" id="diagseg" role="group" aria-label="Run shown on the map"></div></div>
+    <div class="map" id="map-cards"></div>
+    <p class="flowrow">Feedback loop: the DC link voltage sets the ceiling used by the Voltage limiter on the next step. That loop is how a battery fault becomes a saturation event.</p>
+    <div class="detail" id="detail"></div>
+  </section>
+
+  <section id="runaway">
+    <div class="sechead">
+      <div class="eyebrow">2 &middot; The runaway</div>
+      <h2>Watch the estimate get fooled</h2>
+      <p>The true magnet strength is 0.066 Wb (dashed line). Press play and the traces fill in. When the voltage ceiling collapses (shaded band), the plain controller reads the shortfall as a wrong parameter and its estimate drifts without limit. Click a legend entry to hide or show a run. Click or drag on any chart to move the time bar.</p>
+    </div>
+    <div class="charts" id="charts-run"></div>
+  </section>
+
+  <section id="sat">
+    <div class="sechead">
+      <div class="eyebrow">3 &middot; Where the voltage goes missing</div>
+      <h2>Asked for versus delivered</h2>
+      <p>The upper chart is the run chosen in section 1. The controller asks for a voltage (dashed). The limiter delivers at most the ceiling (thin line). The gap between asked and delivered is the actuator disturbance from the research notes. The lower chart compares that gap across runs.</p>
+    </div>
+    <div class="charts" id="charts-sat"></div>
+  </section>
+
+  <section id="bounded">
+    <div class="sechead">
+      <div class="eyebrow">4 &middot; Does the state stay bounded?</div>
+      <h2>Protected runs stay inside the envelope, plain ones leave it</h2>
+      <p>V is the energy-like Lyapunov candidate: tracking error plus estimate error. A bounded V means a bounded state. On a log scale the plain controller's V climbs by orders of magnitude, while the protected runs rise briefly and fall back. This is evidence from simulated runs. It is not a proof.</p>
+    </div>
+    <div class="charts" id="charts-bound"></div>
+    <div class="cols" style="margin-top:14px">
+      <div class="tablewrap"><table id="bound-table"></table></div>
+      <div class="callout" id="theory"></div>
+    </div>
+  </section>
+
+  <section id="battery">
+    <div class="sechead">
+      <div class="eyebrow">5 &middot; Battery and DC link</div>
+      <h2>A battery fault becomes a voltage fault</h2>
+      <p>When the BMS cuts the pack current below what the inverter wants, the capacitor covers the gap for a few milliseconds, then the bus voltage falls, and with it the inverter ceiling.</p>
+    </div>
+    <div class="charts" id="charts-batt"></div>
+  </section>
+
+  <section id="electrical">
+    <div class="sechead">
+      <div class="eyebrow">6 &middot; Electrical mismatch</div>
+      <h2>Shaft power is not the whole electrical story</h2>
+      <p>The theory work is on electrical quantities, so the electrical gap has to be rebuilt from the shaft gap, not swapped for it. Electrical power splits into shaft power, copper heat and stored magnetic energy. The gap splits the same way, and the three parts add up to the electrical gap. The run is the one chosen in section 1.</p>
+    </div>
+    <div class="charts" id="charts-elec"></div>
+    <div class="cols" style="margin-top:14px">
+      <div class="tablewrap"><table id="elec-table"></table></div>
+      <div class="callout good" id="elec-note"></div>
+    </div>
+  </section>
+
+  <section id="mmap">
+    <div class="sechead">
+      <div class="eyebrow">7 &middot; The mismatch map</div>
+      <h2>Every gap, across classes of speed request</h2>
+      <p>Each row is one run. Each column is one hand-off, as a percentage of its natural scale (speed 190 rad/s, voltage 173 V, current 250 A, torque 74 N&middot;m, power 14.1 kW, bus 300 V). Baseline runs have no fault, so whatever is left in them comes from the data or the controller. The step class is infeasible on purpose, so its gaps belong to the data.</p>
+    </div>
+    <div class="bar-row" style="margin-bottom:10px">
+      <span class="eyebrow">Measure</span><div class="seg" id="mm-metric" role="group" aria-label="Measure"></div>
+      <span class="eyebrow">Runs</span><div class="seg" id="mm-filter" role="group" aria-label="Which runs"></div>
+    </div>
+    <div class="tablewrap"><table id="mmap-table"></table></div>
+    <h3 style="margin:22px 0 4px">Where does the speed shortfall come from?</h3>
+    <p class="scendesc" style="margin-bottom:10px">Share of each run's squared speed error that falls in a window where the data was infeasible for any controller (amber), in the fault window plus 3 s of recovery (red), or elsewhere, which is the controller and plant (blue). Runs marked * predate the data-feasibility ledger.</p>
+    <div id="attrib"></div>
+  </section>
+
+  <section id="ledger">
+    <div class="sechead">
+      <div class="eyebrow">8 &middot; Run by run</div>
+      <h2>The mismatch ledger</h2>
+      <p>Computed on the full-rate data, so a spike the thinned charts skip still shows here. Delta is always delivered minus requested.</p>
+    </div>
+    <div class="tablewrap"><table id="ledger-table"></table></div>
+  </section>
+
+  <section id="catalog">
+    <div class="sechead">
+      <div class="eyebrow">9 &middot; Every channel</div>
+      <h2>What the data team gets</h2>
+      <p>All channels in the data product, with the card they belong to and their value at the time on the bar. The same names are the column names in <span class="mono">runs/*.parquet</span>.</p>
+    </div>
+    <div class="bar-row" style="margin-bottom:10px"><input type="search" id="q" placeholder="Filter by name, card or meaning" aria-label="Filter channels"><span class="eyebrow" id="qcount"></span></div>
+    <div class="tablewrap" style="max-height:560px;overflow:auto"><table id="cat-table"></table></div>
+  </section>
+
+  <section id="status">
+    <div class="sechead">
+      <div class="eyebrow">10 &middot; Solid and not yet solid</div>
+      <h2>What this page does and does not show</h2>
+    </div>
+    <div class="cols">
+      <div class="callout good"><h3>Checked in the sandbox</h3><ul>
+        <li>60 automated tests pass: plant physics, telemetry identities, battery energy balance, and 51 data-loader cases.</li>
+        <li>No hidden clipping: the plant-versus-ours voltage check (M3) stays at about 1e-11 V in every run.</li>
+        <li>Every run is finite and none diverged. The real-drive runs use a Tesla Model 3 trace from TUM (CC BY 4.0).</li>
+        <li>The battery energy chain closes to about 1e-11 W at every step.</li>
+      </ul></div>
+      <div class="callout"><h3>Not yet true</h3><ul>
+        <li>No stability proof. The inequality V&#775; &le; &minus;&lambda;V + c is the theory team's job.</li>
+        <li>Pack numbers are generic assumptions. The simulated battery power tracks the real car only loosely (correlation 0.65 at 5 s smoothing, regen share 12% against 38%).</li>
+        <li>The real-drive vehicle is a scaled toy. The two highway tracks are refused by the Tier 1 motor.</li>
+        <li>No sensor noise yet. One unknown parameter, one kind of event per run.</li>
+        <li>Charts are thinned for the page. Full-rate data is in the run files.</li>
+      </ul></div>
+    </div>
+  </section>
+  <footer>Data: Gym-Electric-Motor 3.0.3 PMSM plant, our battery and DC-link model, and a Tesla Model 3 CAN trace (Rosenberger et al., TUM 2024, doi:10.14459/2024mp1735471, CC BY 4.0). Built from <span class="mono">dashboard/build_dashboard.py</span>.</footer>
+</div>
+
+<script>
+"use strict";
+const D = /*__DATA__*/null;
+const RUN = D.runs, ST = D.stats, PSI = D.psi_true;
+const SCEN = {
+  1: {title: "Voltage ceiling drops to 25 V", runs: ["A","B","C","D","Dg"], diag: "B",
+      desc: "8 s experiment on the plain motor. Speed ramps to 200 rad/s, a 10 N·m grade load starts at 1.5 s, and at 4.5 s the voltage ceiling falls from 173 V to 25 V for one second."},
+  2: {title: "Battery cuts its current", runs: ["Eb","Eg"], diag: "Eb",
+      desc: "Same 8 s experiment, but the event is physical. The BMS cuts the allowed pack current to 5 A for one second, below the 12.6 A cruise demand, so the DC link collapses."},
+  3: {title: "Real Tesla drive", runs: ["T0n","T0p"], diag: "T0n",
+      desc: "A recorded Tesla Model 3 drive (283 s) scaled onto the Tier 1 motor. The BMS cuts the pack current for 3 s at the moment of peak acceleration power."}
+};
+const CLS = {base:"--c-base", naive:"--c-naive", robust:"--c-robust", aw:"--c-aw", awgov:"--c-awgov"};
+const DASH = {base:"2 4", naive:"", robust:"7 4", aw:"", awgov:"10 3 2 3"};
+const SHORT = k => RUN[k].name.split(/\s{1,2}/)[0] + " " + RUN[k].name.slice(RUN[k].name.indexOf(" ")+1).trim();
+const state = {scen: 1, t: 0, playing: false, diag: "B", visible: new Set(Object.keys(RUN)), zoom: false, node: "sat", filter: ""};
+const $ = id => document.getElementById(id);
+const el = (tag, attrs, kids) => { const e = document.createElement(tag); for (const k in (attrs||{})) { if (k === "text") e.textContent = attrs[k]; else if (k === "html") e.innerHTML = attrs[k]; else e.setAttribute(k, attrs[k]); } (kids||[]).forEach(c => e.appendChild(c)); return e; };
+const svgel = (tag, attrs) => { const e = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in (attrs||{})) e.setAttribute(k, attrs[k]); return e; };
+const T = () => Math.max(...SCEN[state.scen].runs.map(k => ST[k].duration));
+
+function fmt(v, unit) {
+  if (v === null || v === undefined || Number.isNaN(v)) return "–";
+  const a = Math.abs(v);
+  let s;
+  if (a === 0) s = "0";
+  else if (a >= 1e5 || a < 1e-3) s = v.toExponential(2);
+  else if (a >= 100) s = v.toFixed(0);
+  else if (a >= 10) s = v.toFixed(1);
+  else if (a >= 1) s = v.toFixed(2);
+  else s = v.toFixed(3);
+  return unit ? s + " " + unit : s;
+}
+function bis(arr, x) { let lo = 0, hi = arr.length - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (arr[m] <= x) lo = m; else hi = m - 1; } return lo; }
+function at(run, key, t) {
+  const c = RUN[run].cols, a = c[key], tt = c.t; if (!a) return null;
+  if (t <= tt[0]) return a[0]; const i = bis(tt, t); if (i >= tt.length - 1) return a[a.length - 1];
+  const f = (t - tt[i]) / (tt[i+1] - tt[i]); const y0 = a[i], y1 = a[i+1]; if (y0 === null || y1 === null) return y0;
+  return y0 + f * (y1 - y0);
+}
+function niceTicks(lo, hi, n) {
+  if (!(hi > lo)) { hi = lo + 1; }
+  const raw = (hi - lo) / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  const step = (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p, out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-6; v += step) out.push(+v.toPrecision(10));
+  return out;
+}
+const tickfmt = v => { const a = Math.abs(v); return a === 0 ? "0" : (a >= 1e4 || a < 1e-2) ? v.toExponential(0) : +v.toPrecision(3) + ""; };
+
+/* ---------------- charts ---------------- */
+const charts = [];
+function eventBand() { for (const k of SCEN[state.scen].runs) if (ST[k].event) return ST[k].event; return null; }
+
+function makeChart(host, cfg) {
+  const box = el("div", {"class": "chart" + (cfg.wide ? " wide" : "")});
+  const head = el("header", {}, [el("h3", {text: cfg.title})]);
+  const legend = el("div", {"class": "legend"});
+  head.appendChild(legend);
+  box.appendChild(head);
+  if (cfg.cap) box.appendChild(el("div", {"class": "cap", text: cfg.cap}));
+  const holder = el("div"); box.appendChild(holder);
+  host.appendChild(box);
+  const ch = {cfg, box, holder, legend, svg: null, parts: [], vals: []};
+  charts.push(ch); return ch;
+}
+function seriesFor(ch) { return ch.cfg.series().filter(s => ch.cfg.fixed || state.visible.has(s.run)); }
+
+function layoutChart(ch) {
+  const cfg = ch.cfg, all = cfg.series();
+  const ss = seriesFor(ch);
+  ch.holder.innerHTML = ""; ch.legend.innerHTML = ""; ch.parts = []; ch.vals = [];
+  if (cfg.unavailable && cfg.unavailable()) { ch.holder.appendChild(el("div", {"class": "na", text: cfg.unavailable()})); ch.svg = null; return; }
+  const W = Math.max(280, Math.floor(ch.holder.clientWidth || ch.box.clientWidth - 24)), H = cfg.h || (W < 440 ? 170 : 210);
+  const m = {l: 50, r: 14, t: 8, b: 24}, pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const tmax = T(); const x = t => m.l + (t / tmax) * pw;
+  let lo = Infinity, hi = -Infinity;
+  const src = all.filter(s => ch.cfg.fixed || state.visible.has(s.run) || true);
+  for (const s of (ss.length ? ss : all)) { const a = RUN[s.run].cols[s.key]; if (!a) continue; for (const v of a) { if (v === null) continue; const w = cfg.log ? Math.max(v, 1e-3) : v; if (w < lo) lo = w; if (w > hi) hi = w; } }
+  for (const h of (cfg.hlines ? cfg.hlines() : [])) { lo = Math.min(lo, h.y); hi = Math.max(hi, h.y); }
+  if (!isFinite(lo)) { lo = 0; hi = 1; }
+  let y0, y1, yt;
+  if (cfg.log) { y0 = Math.pow(10, Math.floor(Math.log10(lo))); y1 = Math.pow(10, Math.ceil(Math.log10(hi))); if (y1 <= y0) y1 = y0 * 10; yt = []; for (let p = Math.log10(y0); p <= Math.log10(y1) + 1e-9; p++) yt.push(Math.pow(10, p)); }
+  else if (cfg.zoom && state.zoom) { y0 = cfg.zoom[0]; y1 = cfg.zoom[1]; yt = niceTicks(y0, y1, 4); }
+  else { const pad = (hi - lo) * 0.06 || 0.5; y0 = cfg.zeroBase && lo >= 0 ? 0 : lo - pad; y1 = hi + pad; yt = niceTicks(y0, y1, 4); y0 = Math.min(y0, yt[0]); y1 = Math.max(y1, yt[yt.length - 1]); }
+  const y = v => { const w = cfg.log ? Math.max(v, y0) : v; const f = cfg.log ? (Math.log10(w) - Math.log10(y0)) / (Math.log10(y1) - Math.log10(y0)) : (w - y0) / (y1 - y0); return m.t + ph * (1 - f); };
+  const svg = svgel("svg", {"class": "plot", width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": cfg.title});
+  const clipId = "clip" + charts.indexOf(ch);
+  const defs = svgel("defs"); const cp = svgel("clipPath", {id: clipId}); cp.appendChild(svgel("rect", {x: m.l, y: m.t, width: pw, height: ph})); defs.appendChild(cp); svg.appendChild(defs);
+  const band = eventBand();
+  if (band) { const r = svgel("rect", {x: x(band[0]), y: m.t, width: Math.max(2, x(band[1]) - x(band[0])), height: ph}); r.style.fill = "var(--band)"; svg.appendChild(r); }
+  for (const v of yt) { const gy = y(v); const l = svgel("line", {x1: m.l, x2: W - m.r, y1: gy, y2: gy}); l.style.stroke = "var(--line)"; l.style.strokeWidth = "1"; svg.appendChild(l); const tx = svgel("text", {x: m.l - 6, y: gy + 3.5, "text-anchor": "end"}); tx.textContent = tickfmt(v); svg.appendChild(tx); }
+  for (const v of niceTicks(0, tmax, W < 440 ? 4 : 8)) { const tx = svgel("text", {x: x(v), y: H - 6, "text-anchor": "middle"}); tx.textContent = tickfmt(v) + (v === 0 ? " s" : ""); svg.appendChild(tx); }
+  const g = svgel("g", {"clip-path": `url(#${clipId})`}); svg.appendChild(g);
+  for (const h of (cfg.hlines ? cfg.hlines() : [])) {
+    if (h.y < y0 || h.y > y1) continue;
+    const l = svgel("line", {x1: m.l, x2: W - m.r, y1: y(h.y), y2: y(h.y), "stroke-dasharray": "5 4"}); l.style.stroke = "var(--muted)"; l.style.strokeWidth = "1.2"; g.appendChild(l);
+    const tx = svgel("text", {x: W - m.r - 3, y: y(h.y) - 4, "text-anchor": "end"}); tx.textContent = h.label; svg.appendChild(tx);
+  }
+  for (const s of ss) {
+    const c = RUN[s.run].cols, a = c[s.key]; if (!a) continue;
+    const pts = c.t.map((t, i) => [x(t), y(a[i] === null ? y0 : a[i])]);
+    const ghost = svgel("path", {d: "M" + pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join("L"), fill: "none"});
+    ghost.style.stroke = s.color; ghost.style.strokeOpacity = "0.13"; ghost.style.strokeWidth = "1.5"; g.appendChild(ghost);
+    const live = svgel("path", {fill: "none", "stroke-linejoin": "round"}); live.style.stroke = s.color; live.style.strokeWidth = s.w || "2"; if (s.dash) live.setAttribute("stroke-dasharray", s.dash); g.appendChild(live);
+    const dot = svgel("circle", {r: 3.6}); dot.style.fill = s.color; dot.style.stroke = "var(--surface)"; dot.style.strokeWidth = "1.5"; svg.appendChild(dot);
+    ch.parts.push({s, pts, live, dot});
+  }
+  const cur = svgel("line", {y1: m.t, y2: m.t + ph}); cur.style.stroke = "var(--ink)"; cur.style.strokeOpacity = "0.55"; cur.style.strokeWidth = "1"; svg.appendChild(cur);
+  ch.cur = cur; ch.m = m; ch.W = W; ch.x = x; ch.y = y; ch.pw = pw; ch.tmax = tmax;
+  const scrubTo = ev => { const r = svg.getBoundingClientRect(); const px = (ev.clientX - r.left) * (W / r.width); setT(Math.min(1, Math.max(0, (px - m.l) / pw)) * tmax, true); };
+  let down = false;
+  svg.addEventListener("pointerdown", ev => { down = true; svg.setPointerCapture(ev.pointerId); scrubTo(ev); });
+  svg.addEventListener("pointermove", ev => { if (down) scrubTo(ev); });
+  svg.addEventListener("pointerup", () => down = false); svg.addEventListener("pointercancel", () => down = false);
+  ch.holder.appendChild(svg); ch.svg = svg;
+  for (const s of all) {
+    const on = ch.cfg.fixed || state.visible.has(s.run);
+    const b = el("button", {"class": "lg", type: "button", "aria-pressed": on ? "true" : "false", title: ch.cfg.fixed ? "" : "Show or hide this run in every chart"});
+    const sw = svgel("svg", {width: 26, height: 8, viewBox: "0 0 26 8"}); const ln = svgel("line", {x1: 1, x2: 25, y1: 4, y2: 4, "stroke-width": 3}); ln.style.stroke = s.color; if (s.dash) ln.setAttribute("stroke-dasharray", s.dash); sw.appendChild(ln);
+    b.appendChild(sw); b.appendChild(el("span", {text: s.label})); const v = el("span", {"class": "val"}); b.appendChild(v); ch.vals.push({s, v});
+    if (!ch.cfg.fixed) b.addEventListener("click", () => { if (state.visible.has(s.run)) { if (SCEN[state.scen].runs.filter(r => state.visible.has(r)).length > 1) state.visible.delete(s.run); } else state.visible.add(s.run); relayout(); });
+    ch.legend.appendChild(b);
+  }
+}
+function drawChart(ch) {
+  if (!ch.svg) return; const t = state.t;
+  for (const p of ch.parts) {
+    const tt = RUN[p.s.run].cols.t; const i = bis(tt, t);
+    let d = "";
+    if (p.pts.length) { const end = Math.min(i + 1, p.pts.length); const seg = p.pts.slice(0, end); const yv = at(p.s.run, p.s.key, t); const xe = ch.x(Math.min(t, tt[tt.length-1])); const ye = yv === null ? seg[seg.length-1][1] : ch.y(yv); d = "M" + seg.map(q => q[0].toFixed(1) + "," + q[1].toFixed(1)).join("L") + (t > tt[i] ? "L" + xe.toFixed(1) + "," + ye.toFixed(1) : ""); p.dot.setAttribute("cx", xe); p.dot.setAttribute("cy", ye); }
+    p.live.setAttribute("d", d || "M0,0");
+  }
+  ch.cur.setAttribute("x1", ch.x(t)); ch.cur.setAttribute("x2", ch.x(t));
+  for (const o of ch.vals) { const v = at(o.s.run, o.s.key, t); o.v.textContent = v === null ? "" : fmt(v, ch.cfg.unit); }
+}
+function relayout() { charts.forEach(layoutChart); updateAll(true); }
+
+/* ---------------- chart definitions ---------------- */
+const runSeries = (key, extra) => () => SCEN[state.scen].runs.map(k => Object.assign({run: k, key, color: `var(${CLS[RUN[k].color]})`, dash: DASH[RUN[k].color], label: SHORT(k)}, extra || {}));
+function defineCharts() {
+  const hrun = $("charts-run"), hsat = $("charts-sat"), hb = $("charts-bound"), hbt = $("charts-batt");
+  const c1 = makeChart(hrun, {title: "Learned magnet strength ψ̂", unit: "Wb", series: runSeries("psi_hat"), hlines: () => [{y: PSI, label: "true value 0.066"}], zoom: [0.02, 0.11], wide: true,
+    cap: "Plain adaptive control (B, Eb, T0n) drifts away from the dashed line. Use the zoom to see how close the protected estimates stay."});
+  const zbtn = el("button", {type: "button", "aria-pressed": "false", text: "Zoom to 0.02–0.11 Wb"}); zbtn.addEventListener("click", () => { state.zoom = !state.zoom; zbtn.setAttribute("aria-pressed", state.zoom); relayout(); });
+  c1.box.querySelector("header").appendChild(zbtn);
+  makeChart(hrun, {title: "Speed", unit: "rad/s", series: () => [{run: SCEN[state.scen].runs[0], key: "omega_ref", color: "var(--muted)", dash: "3 3", label: "request", w: "1.5"}].concat(runSeries("omega_m")()),
+    cap: "The driver's request (grey) against the speed each controller actually delivers."});
+  makeChart(hrun, {title: "Estimate error |ψ̃|", unit: "Wb", series: runSeries("psi_err"), hlines: () => [{y: 0.05, label: "fooled above 0.05"}], cap: "Distance between the learned and true magnet strength. We call a controller fooled when this passes 0.05 Wb."});
+  makeChart(hsat, {title: "Voltage asked for and delivered (run from section 1)", unit: "V", wide: true, fixed: true,
+    series: () => { const k = state.diag, col = `var(${CLS[RUN[k].color]})`; return [{run: k, key: "u_cmd_n", color: "var(--c-base)", dash: "6 4", label: "asked |u_cmd|", w: "1.6"}, {run: k, key: "u_app_n", color: col, label: "delivered |u_app|"}, {run: k, key: "u_limit", color: "var(--muted)", label: "ceiling", w: "1.3"}]; },
+    cap: "Where the dashed line sits above the delivered line, the actuator is saturated."});
+  makeChart(hsat, {title: "Voltage shortfall |Δu|", unit: "V", series: runSeries("du_abs"), cap: "Size of the actuator disturbance each run experienced."});
+  makeChart(hsat, {title: "Shaft energy owed", unit: "kJ", series: runSeries("Eun_kj"), cap: "Cumulative shaft energy requested and not delivered (M8b)."});
+  makeChart(hb, {title: "Lyapunov candidate V (log scale)", unit: "", series: runSeries("V"), log: true, wide: true, cap: "V = tracking error energy + estimate error energy + anti-windup energy. Plain control leaves the chart; the protected runs return to near zero."});
+  makeChart(hb, {title: "Current magnitude |i|", unit: "A", series: runSeries("i_mag"), hlines: () => [{y: 250, label: "current limit 250 A"}], cap: "Current the motor carries. The limit is 250 A. The plain controller overshoots it; the protected controllers stay at or just above it.", wide: true});
+  const noB = () => SCEN[state.scen].runs.every(k => !RUN[k].has_batt) ? "This scenario has no battery model: the bus is fixed at 300 V and the event is imposed. Choose “Battery cuts its current” or “Real Tesla drive” above." : null;
+  const helec = $("charts-elec");
+  const decNote = () => ST[state.diag].decimated ? "This run is logged at 200 Hz. The magnetic term is a finite difference and is not meaningful at that rate, so it is left out." : null;
+  makeChart(helec, {title: "Electrical gap rebuilt from its parts", unit: "W", wide: true, fixed: true,
+    series: () => { const k = state.diag; const parts = [{run: k, key: "dP_mech", color: "var(--c-aw)", label: "shaft gap", w: "1.6"}, {run: k, key: "dP_cu", color: "var(--c-robust)", dash: "7 4", label: "copper-loss gap", w: "1.6"}];
+      if (ST[k].decimated) return [{run: k, key: "dP_qs", color: "var(--c-base)", label: "shaft + copper", w: "2.4"}].concat(parts);
+      return [{run: k, key: "dP_elec_ref", color: "var(--c-base)", label: "electrical gap", w: "2.4"}].concat(parts, [{run: k, key: "P_mag", color: "var(--c-awgov)", dash: "2 3", label: "magnetic storage rate", w: "1.6"}]); },
+    cap: "Delivered minus reference-implied electrical power. Black is the electrical gap. The coloured lines add up to it at every instant. The shaft gap alone misses the copper and magnetic parts."});
+  makeChart(helec, {title: "Voltage-command gap and where the parameter error enters", unit: "W", fixed: true, unavailable: () => decNote(),
+    series: () => { const k = state.diag; return [{run: k, key: "dP_elec", color: "var(--c-base)", label: "actuator gap 1.5\u0394u\u00B7i", w: "2.4"}, {run: k, key: "P_psi_err", color: "var(--c-aw)", label: "flux-estimate error", w: "1.6"}, {run: k, key: "P_mag", color: "var(--c-awgov)", dash: "2 3", label: "magnetic storage", w: "1.6"}, {run: k, key: "negP_fb", color: "var(--c-robust)", dash: "7 4", label: "minus feedback effort", w: "1.6"}]; },
+    cap: "Exact split of the voltage-command gap. The three coloured lines sum to the black one."});
+  makeChart(helec, {title: "Energy owed: shaft against electrical", unit: "kJ", fixed: true,
+    series: () => { const k = state.diag; const a = [{run: k, key: "Eun_kj", color: "var(--c-aw)", label: "shaft energy owed", w: "2"}]; return ST[k].decimated ? a : a.concat([{run: k, key: "Eel_kj", color: "var(--c-base)", dash: "7 4", label: "electrical energy owed", w: "2"}]); },
+    cap: "The two differ by the copper-loss energy and a bounded stored-field term."});
+  makeChart(hbt, {title: "DC link voltage V_dc", unit: "V", series: runSeries("V_dc"), unavailable: noB, cap: "Falls when the pack cannot supply what the inverter draws. The inverter ceiling is this value divided by √3."});
+  makeChart(hbt, {title: "Pack current delivered", unit: "A", series: () => runSeries("i_batt")().concat([{run: SCEN[state.scen].runs[0], key: "i_batt_max", color: "var(--muted)", dash: "3 3", label: "BMS limit", w: "1.4"}]), unavailable: noB, cap: "Positive means discharging. During the cut the limit drops below the inverter demand."});
+  makeChart(hbt, {title: "Inverter ceiling lost (M9b)", unit: "V", series: runSeries("ceiling_loss"), unavailable: noB, cap: "Headroom taken away from the voltage limiter by the sagging bus."});
+  makeChart(hbt, {title: "Pack minus inverter current (M10)", unit: "A", series: runSeries("d_i_dc"), unavailable: noB, cap: "Negative means the pack delivered less than the inverter asked for."});
+}
+
+/* ---------------- map ---------------- */
+function nodeState(n, run) {
+  const v = k => at(run, k, state.t);
+  if (n.id === "sat") return v("saturated") > 0.5 ? ["saturated", true] : ["within ceiling", false];
+  if (n.id === "ctl") return Math.abs(v("psi_tilde") || 0) > 0.05 ? ["fooled", true] : ["tracking", false];
+  if (n.id === "bat") { if (!RUN[run].has_batt) return ["not modelled", null]; return v("bms_limited") > 0.5 ? ["BMS limiting", true] : ["normal", false]; }
+  if (n.id === "bus") { if (!RUN[run].has_batt) return ["fixed 300 V", null]; return (v("ceiling_loss") || 0) < -5 ? ["bus sagging", true] : ["steady", false]; }
+  if (n.id === "mot") return (v("omega_ref") - v("omega_m")) > 15 ? ["falling behind", true] : ["on request", false];
+  if (n.id === "req") return ["", null];
+  return ["", null];
+}
+function buildMap() {
+  const host = $("map-cards"); host.innerHTML = "";
+  D.nodes.forEach((n, i) => {
+    const b = el("button", {"class": "node" + (i < 4 || n.id === "bat" ? " arrow" : ""), type: "button", "data-id": n.id, "aria-pressed": n.id === state.node ? "true" : "false"});
+    const h = el("div", {"class": "nh"}, [el("div", {}, [el("h3", {text: n.title}), el("div", {"class": "sub", text: n.sub})]), el("span", {"class": "pill", "data-pill": n.id})]);
+    const ul = el("ul", {"class": "live"}); n.live.forEach(l => ul.appendChild(el("li", {}, [el("span", {text: l[1]}), el("span", {"data-live": n.id + ":" + l[0], text: "–"})])));
+    b.appendChild(h); b.appendChild(ul);
+    if (n.gap) b.appendChild(el("div", {"class": "gapline"}, [el("span", {text: n.gap[1]}), el("b", {"data-gap": n.id, text: "–"})]));
+    b.addEventListener("click", () => { state.node = n.id; document.querySelectorAll(".node").forEach(x => x.setAttribute("aria-pressed", x.dataset.id === n.id)); buildDetail(); updateAll(); });
+    host.appendChild(b);
+  });
+}
+function buildDetail() {
+  const n = D.nodes.find(x => x.id === state.node), host = $("detail"); host.innerHTML = "";
+  host.appendChild(el("h3", {text: n.title + " – " + n.sub}));
+  host.appendChild(el("div", {"class": "two"}, [el("p", {text: n.blurb}), el("div", {"class": "watch"}, [el("b", {text: "What to watch. "}), document.createTextNode(n.watch)])]));
+  const tb = el("table"); tb.appendChild(el("tr", {html: "<th>Channel</th><th style='text-align:right'>Value now</th><th>Unit</th><th>What it is</th>"}));
+  n.ch.forEach(c => { const m = D.catalog[c] || {}; const tr = el("tr", {"class": n.gap && n.gap[0] === c ? "isgap" : ""}); tr.appendChild(el("td", {"class": "nm", text: c})); tr.appendChild(el("td", {"class": "v", "data-chv": c, text: "–"})); tr.appendChild(el("td", {"class": "nm", text: m.unit || ""})); tr.appendChild(el("td", {text: m.desc || ""})); tb.appendChild(tr); });
+  const w = el("div", {"class": "tablewrap"}); w.appendChild(tb); host.appendChild(w);
+}
+
+/* ---------------- tables ---------------- */
+const ENV = {psi: 0.15, i: 275};
+const HOT = {e_speed: 5, i_ref_clip: 5, dP_mech: 50, dP_qs: 50, d_i_dc: 1, bus_sag: 5};
+function buildTables() {
+  const runs = SCEN[state.scen].runs;
+  const bt = $("bound-table"); bt.innerHTML = "<tr><th>Run</th><th style='text-align:right'>Peak |ψ̂|</th><th style='text-align:right'>Peak |i|</th><th style='text-align:right'>V start</th><th style='text-align:right'>V peak</th><th style='text-align:right'>Input |u| / ceiling</th><th style='text-align:right'>Ultimate |\u03C8\u0303|</th><th style='text-align:right'>Ultimate speed error</th><th>Demo envelope</th></tr>";
+  runs.forEach(k => { const s = ST[k]; const inside = s.psi_peak <= ENV.psi && s.i_peak <= ENV.i; const tr = el("tr"); tr.appendChild(el("td", {text: SHORT(k)}));
+    const bd = s.bounds; [fmt(s.psi_peak, "Wb"), fmt(s.i_peak, "A"), fmt(s.V0), fmt(s.V_peak), bd.input_bound.toFixed(3), fmt(bd.psi_err_ultimate, "Wb"), fmt(bd.e_speed_ultimate, "rad/s")].forEach(x => tr.appendChild(el("td", {"class": "v", text: x})));
+    tr.appendChild(el("td", {}, [el("span", {"class": "chip " + (inside ? "ok" : "bad"), text: inside ? "stayed inside" : "left it"})])); bt.appendChild(tr); });
+  const th = $("theory"); th.innerHTML = "";
+  th.appendChild(el("h3", {text: "Read this before quoting it"}));
+  th.appendChild(el("p", {html: `The demo envelope is our own yardstick: |ψ̂| ≤ ${ENV.psi} Wb and |i| ≤ ${ENV.i} A. It is not a theorem. Staying inside it in these runs is evidence that the protection works, for this plant, this event and these gains.`}));
+  th.appendChild(el("p", {html: "<b>Bounded input</b> holds by construction: the saturation projects onto a disc, so |u| / ceiling can never pass 1.000. <b>Bounded state</b> and the <b>ultimate bound</b> (what the error stays inside over the final window) are only measured here. A plain controller has not come back inside a small ball by the end of the run."}));
+  th.appendChild(el("p", {text: "What the theory team still has to prove:"}));
+  th.appendChild(el("ul", {html: "<li>A bound of the form V̇ ≤ −λV + c holds with the saturation term Δu included, for the projection used here.</li><li>The anti-windup state z and the leak toward the nominal value keep the estimate in a compact set.</li><li>The bound still holds when the ceiling moves with the DC link voltage.</li>"}));
+  const et = $("elec-table"); et.innerHTML = "<tr><th>Run</th><th style='text-align:right'>Shaft gap rms</th><th style='text-align:right'>Copper gap rms</th><th style='text-align:right'>Shaft energy kJ</th><th style='text-align:right'>Copper energy kJ</th><th style='text-align:right'>Shaft-only error</th><th style='text-align:right'>Counterfactual samples</th></tr>";
+  runs.forEach(k => { const e = ST[k].elec, tot = e.e_shaft_kj + e.e_cu_kj; const err = Math.abs(tot) > 1e-9 ? 100 * Math.abs(e.e_cu_kj) / Math.abs(tot) : null; const tr = el("tr"); tr.appendChild(el("td", {text: SHORT(k)}));
+    [fmt(e.rms_dP_mech, "W"), fmt(e.rms_dP_cu, "W"), fmt(e.e_shaft_kj), fmt(e.e_cu_kj), err === null ? "n/a" : fmt(err, "%"), fmt(e.sign_conflict_pct, "%")].forEach(x => tr.appendChild(el("td", {"class": "v", text: x}))); et.appendChild(tr); });
+  const en = $("elec-note"); en.innerHTML = "";
+  en.appendChild(el("h3", {text: "Can shaft power be turned back into electrical power?"}));
+  en.appendChild(el("p", {html: "Yes, exactly, by adding the two parts the shaft number leaves out: <b>electrical gap = shaft gap + copper-loss gap + magnetic storage rate</b>. Using the shaft gap alone as the electrical gap misses the copper part, shown as shaft-only error in the table (energy basis; the magnetic term is left out because it is bounded)."}));
+  en.appendChild(el("ul", {html: "<li><b>Reference-implied power</b> (P_req_ref) depends only on the request and the speed. Use it for what the driver asked for.</li><li><b>Actuator gap</b> 1.5 \u0394u\u00B7i is exact and lives in the theory's own voltage and current coordinates.</li><li><b>Voltage-command power</b> is dominated by feedback effort during saturation and can go negative. It is flagged as counterfactual and not used as the request.</li>"}));
+  const lt = $("ledger-table"); lt.innerHTML = "";
+  const cols = ["Run", "Peak |ψ̂|", "Fooled from", "Peak |i| A", "Peak |Δu| V", "Peak speed shortfall", "Energy owed kJ", "Saturated steps", "Lowest V_dc", "Hidden clipping M3", "All finite"];
+  lt.appendChild(el("tr", {html: cols.map((c, i) => `<th${i ? " style='text-align:right'" : ""}>${c}</th>`).join("")}));
+  runs.forEach(k => { const s = ST[k]; const tr = el("tr"); tr.appendChild(el("td", {text: SHORT(k)}));
+    [fmt(s.psi_peak, "Wb"), s.runaway_t === null ? "never" : fmt(s.runaway_t, "s"), fmt(s.i_peak), fmt(s.du_peak), fmt(s.speed_short_peak, "rad/s"), fmt(s.eun_kj), fmt(s.sat_pct, "%"), s.vdc_min === null ? "n/a" : fmt(s.vdc_min, "V"), s.m3_max.toExponential(1) + " V", s.all_finite ? "yes" : "NO"].forEach(x => tr.appendChild(el("td", {"class": "v", text: x}))); lt.appendChild(tr); });
+}
+const MM = {metric: "rms_pct", filter: "all"};
+const MM_METRICS = [["rms_pct", "RMS, % of scale"], ["peak_pct", "Peak, % of scale"], ["active_pct", "Time above 1 % of scale"]];
+const MM_FILTERS = [["all", "All"], ["event", "With a fault"], ["base", "Baselines (no fault)"]];
+function buildMmap() {
+  const mm = D.mmap; if (!mm) { $("mmap").hidden = true; return; }
+  const seg = (id, list, key) => { const h = $(id); h.innerHTML = ""; list.forEach(([v, t]) => { const b = el("button", {type: "button", "aria-pressed": MM[key] === v ? "true" : "false", text: t}); b.addEventListener("click", () => { MM[key] = v; buildMmap(); }); h.appendChild(b); }); };
+  seg("mm-metric", MM_METRICS, "metric"); seg("mm-filter", MM_FILTERS, "filter");
+  const ids = Object.keys(mm.scales);
+  const runs = mm.runs.filter(r => MM.filter === "all" || (MM.filter === "event" ? !!r.event : !r.event));
+  const cell = {}; mm.rows.forEach(r => cell[r.run + "|" + r.mismatch] = r);
+  const tb = $("mmap-table"); tb.innerHTML = "";
+  tb.appendChild(el("tr", {html: "<th>Run</th><th>Controller</th><th style='text-align:right'>Data infeasible</th><th style='text-align:right' title='Average RMS % of M1, M2, M4, M5, M6c, equal weights'>Index</th>" + ids.map(i => `<th style='text-align:right' title='${mm.scales[i][0]} (${mm.scales[i][1]})'>${i}</th>`).join("")}));
+  const order = []; runs.forEach(r => { if (!order.includes(r.dataset_class)) order.push(r.dataset_class); });
+  order.forEach(cls => {
+    tb.appendChild(el("tr", {html: `<td colspan='${ids.length + 4}' style='background:var(--surface2);font-weight:600'>${cls}</td>`}));
+    runs.filter(r => r.dataset_class === cls).forEach(r => {
+      const tr = el("tr"); tr.appendChild(el("td", {"class": "nm", text: r.run})); tr.appendChild(el("td", {text: r.controller + (r.event ? "" : " (no fault)")}));
+      tr.appendChild(el("td", {"class": "v", text: r.data_ratio_gt1_pct === null ? "n/a" : fmt(r.data_ratio_gt1_pct, "%")}));
+      tr.appendChild(el("td", {"class": "v", style: "font-weight:600", text: fmt(r.index, "%")}));
+      ids.forEach(i => { const c = cell[r.run + "|" + i]; const td = el("td", {"class": "v"}); if (!c) { td.textContent = "\u2013"; } else { const v = c[MM.metric]; td.textContent = v < 0.005 ? "0" : fmt(v); const f = Math.min(1, Math.sqrt(v / 100)); td.style.background = `color-mix(in srgb, var(--c-aw) ${Math.round(f * 75)}%, var(--surface))`; if (f > 0.6) td.style.color = "#fff"; td.title = `${c.label}: rms ${fmt(c.rms, c.unit)}, peak ${fmt(c.peak, c.unit)}`; } tr.appendChild(td); });
+      tb.appendChild(tr); }); });
+  const at = $("attrib"); at.innerHTML = "";
+  at.appendChild(el("div", {"class": "legend", style: "margin-bottom:6px"}, [["data infeasible", "--c-robust"], ["fault + recovery", "--c-naive"], ["controller and plant", "--c-aw"]].map(([t, c]) => el("span", {"class": "lg", style: "cursor:default"}, [el("span", {style: `display:inline-block;width:12px;height:12px;border-radius:2px;background:var(${c})`}), el("span", {text: t})]))));
+  runs.forEach(r => { const s = r.m1_share, row = el("div", {style: "display:grid;grid-template-columns:minmax(60px,110px) 1fr minmax(110px,auto);gap:10px;align-items:center;margin:4px 0;font-size:13px"});
+    row.appendChild(el("span", {"class": "nm", text: r.run + (r.data_ratio_gt1_pct === null ? "*" : "")}));
+    const bar = el("div", {style: "display:flex;height:16px;border:1px solid var(--line);border-radius:3px;overflow:hidden;background:var(--surface2)", role: "img", "aria-label": `${r.run}: data ${Math.round(100*s.data)} %, fault ${Math.round(100*s.event)} %, controller and plant ${Math.round(100*s.remainder)} %`});
+    [["data", "--c-robust"], ["event", "--c-naive"], ["remainder", "--c-aw"]].forEach(([k, c]) => bar.appendChild(el("div", {style: `width:${100 * s[k]}%;background:var(${c});margin-right:${s[k] > 0 ? 2 : 0}px`, title: k + " " + (100 * s[k]).toFixed(0) + " %"})));
+    row.appendChild(bar); row.appendChild(el("span", {"class": "num", style: "color:var(--muted)", text: `${(100*s.data).toFixed(0)} / ${(100*s.event).toFixed(0)} / ${(100*s.remainder).toFixed(0)} %`})); at.appendChild(row); });
+}
+function buildCatalog() {
+  const tb = $("cat-table"); tb.innerHTML = "<tr><th>Channel</th><th style='text-align:right'>Value now</th><th>Unit</th><th>Card</th><th>What it is</th></tr>";
+  const owner = {}; D.nodes.forEach(n => n.ch.forEach(c => owner[c] = n.title));
+  Object.keys(D.catalog).forEach(c => { const m = D.catalog[c]; const tr = el("tr", {"data-name": c, "data-search": (c + " " + owner[c] + " " + m.desc + " " + m.group).toLowerCase()});
+    tr.appendChild(el("td", {"class": "nm", text: c})); tr.appendChild(el("td", {"class": "v", "data-cv": c, text: "–"})); tr.appendChild(el("td", {"class": "nm", text: m.unit})); tr.appendChild(el("td", {text: owner[c] || ""})); tr.appendChild(el("td", {text: m.desc})); tb.appendChild(tr); });
+}
+function filterCatalog() { const q = state.filter.toLowerCase().trim(); let n = 0; document.querySelectorAll("#cat-table tr[data-search]").forEach(r => { const show = !q || r.dataset.search.includes(q); r.hidden = !show; if (show) n++; }); $("qcount").textContent = n + " of " + Object.keys(D.catalog).length; }
+
+/* ---------------- controls + loop ---------------- */
+function buildControls() {
+  const sg = $("scenseg"); sg.innerHTML = "";
+  Object.keys(SCEN).forEach(k => { const b = el("button", {type: "button", "aria-pressed": +k === state.scen ? "true" : "false", text: SCEN[k].title}); b.addEventListener("click", () => setScen(+k)); sg.appendChild(b); });
+  const dg = $("diagseg"); dg.innerHTML = "";
+  SCEN[state.scen].runs.forEach(k => { const b = el("button", {type: "button", "aria-pressed": k === state.diag ? "true" : "false", text: SHORT(k)}); b.addEventListener("click", () => { state.diag = k; buildControls(); relayout(); }); dg.appendChild(b); });
+  $("scendesc").textContent = SCEN[state.scen].desc;
+}
+function setScen(s) { state.scen = s; state.diag = SCEN[s].diag; state.t = T(); state.playing = false; $("play").textContent = "Play from start"; state.visible = new Set(Object.keys(RUN)); buildControls(); buildTables(); relayout(); }
+function setT(t, fromUser) { if (fromUser) state.playing = false, $("play").textContent = "Play from start"; state.t = Math.max(0, Math.min(T(), t)); updateAll(); }
+let raf = 0, last = 0;
+function loop(ts) { if (!state.playing) return; const dt = (ts - last) / 1000; last = ts; state.t += dt * T() / 14; if (state.t >= T()) { state.t = T(); state.playing = false; $("play").textContent = "Play from start"; } updateAll(); if (state.playing) raf = requestAnimationFrame(loop); }
+$("play").addEventListener("click", () => { if (state.playing) { state.playing = false; $("play").textContent = "Resume"; return; } if (state.t >= T() - 1e-6 || $("play").textContent.startsWith("Play")) state.t = 0; state.playing = true; $("play").textContent = "Pause"; last = performance.now(); raf = requestAnimationFrame(loop); });
+$("scrub").addEventListener("input", e => setT(+e.target.value / 1000 * T(), true));
+$("q").addEventListener("input", e => { state.filter = e.target.value; filterCatalog(); });
+
+let tick = 0;
+function updateAll(force) {
+  $("scrub").value = Math.round(state.t / T() * 1000);
+  $("timelabel").textContent = state.t.toFixed(state.t > 50 ? 1 : 2) + " / " + T().toFixed(state.t > 50 ? 0 : 1) + " s";
+  charts.forEach(drawChart);
+  const run = state.diag;
+  document.querySelectorAll("[data-live]").forEach(e => { const [nid, k] = e.dataset.live.split(":"); const n = D.nodes.find(x => x.id === nid); const l = n.live.find(x => x[0] === k); e.textContent = RUN[run].cols[k] ? fmt(at(run, k, state.t), l[2]) : "n/a"; });
+  document.querySelectorAll("[data-gap]").forEach(e => { const n = D.nodes.find(x => x.id === e.dataset.gap); const v = RUN[run].cols[n.gap[0]] ? at(run, n.gap[0], state.t) : null; e.textContent = v === null ? "n/a" : fmt(v, n.gap[2]); e.classList.toggle("hot", v !== null && Math.abs(v) > (HOT[n.gap[0]] || Infinity)); });
+  D.nodes.forEach(n => { const p = document.querySelector(`[data-pill="${n.id}"]`); const b = document.querySelector(`.node[data-id="${n.id}"]`); const [txt, bad] = nodeState(n, run); p.textContent = txt; p.hidden = !txt; p.className = "pill" + (bad === true ? " bad" : bad === null ? " off" : ""); b.classList.toggle("alert", bad === true); });
+  document.querySelectorAll("[data-chv]").forEach(e => { e.textContent = RUN[run].cols[e.dataset.chv] ? fmt(at(run, e.dataset.chv, state.t)) : "n/a"; });
+  document.querySelectorAll("[data-cv]").forEach(e => { if (e.parentNode.hidden) return; e.textContent = RUN[run].cols[e.dataset.cv] ? fmt(at(run, e.dataset.cv, state.t)) : "n/a"; });
+}
+function buildFacts() {
+  const B = ST.B, D_ = ST.D, Dg = ST.Dg;
+  const f = (cls, big, txt) => el("div", {"class": "fact " + cls}, [el("b", {text: big}), el("span", {text: txt})]);
+  const h = $("facts");
+  h.appendChild(f("bad", (B.psi_peak / PSI).toFixed(0) + "×", `Plain controller (B): the estimate peaks at ${fmt(B.psi_peak)} Wb against a true ${PSI}`));
+  h.appendChild(f("good", (D_.psi_peak / PSI).toFixed(2) + "×", `Anti-windup (D): the estimate peaks at ${fmt(D_.psi_peak)} Wb. C (clamped) and Dg stay bounded too`));
+  h.appendChild(f("", fmt(B.i_peak) + " A", `Plain controller's peak current against a 250 A limit. Protected: ${fmt(D_.i_peak)} A and ${fmt(Dg.i_peak)} A`));
+  h.appendChild(f("", D.tests + " tests", "pass, including 51 bad-data cases for the real-drive loader"));
+}
+
+buildFacts(); buildControls(); buildMap(); buildDetail(); buildCatalog(); filterCatalog(); buildMmap(); defineCharts(); state.t = T(); buildTables(); relayout();
+let rz = 0; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(relayout, 120); });
+</script>

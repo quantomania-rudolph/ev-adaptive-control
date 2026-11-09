@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "status": "ok",
+  "sign_convention": "FIXTURE ONLY. discharge positive inside the fit",
+  "source": {
+    "files": {},
+    "n_tracks": 0,
+    "fit_hash": "FIXTURE",
+    "filters": {}
+  },
+  "pack_real": {
+    "v_nom": 348.0,
+    "p_base_w": 232000.0,
+    "i_base_a": 667.0,
+    "r_eff_by_window_ohm": {
+      "0.1": 0.0105,
+      "0.3": 0.03,
+      "0.5": 0.04,
+      "1.0": 0.05
+    },
+    "r_eff_pu": {
+      "lo": 0.06,
+      "mid": 0.08,
+      "hi": 0.11
+    },
+    "ocv_k": [
+      3.6,
+      0.3,
+      -0.05
+    ],
+    "rc": {
+      "r1_pu": 0.02,
+      "tau1_s": 10.0
+    }
+  },
+  "envelope_real": {
+    "soc_grid": [
+      0.1,
+      0.5,
+      0.9
+    ],
+    "i_dis_lim_a": [
+      600.0,
+      740.0,
+      740.0
+    ],
+    "i_chg_lim_a": [
+      100.0,
+      190.0,
+      120.0
+    ],
+    "note": "FIXTURE observed-use envelope"
+  },
+  "scaling": {
+    "p_base_toy_w": 65000.0,
+    "v_toy": 300.0,
+    "i_base_toy": 216.7,
+    "default_r_pu": 0.08,
+    "r_total_toy_ohm": {
+      "lo": 0.083,
+      "mid": 0.111,
+      "hi": 0.152
+    },
+    "i_dis_lim_toy_a": [
+      190.0,
+      237.0,
+      237.0
+    ],
+    "i_chg_lim_toy_a": [
+      32.0,
+      61.0,
+      38.0
+    ]
+  },
+  "toy_battery_kwargs": {
+    "n_series": 80,
+    "q_ah": 60.0,
+    "r0_cell": 0.0009,
+    "r1_cell": 0.0004,
+    "tau1": 10.0,
+    "r_bus": 0.005,
+    "i_dis_max": 237.0,
+    "i_chg_max": 61.0
+  },
+  "validation": {
+    "loo_rmse_v": {
+      "fit": 0.0,
+      "const_v": 0.0,
+      "const_r": 0.0,
+      "generic": 0.0
+    },
+    "status_reason": "fixture",
+    "glitches_removed": {}
+  }
+}

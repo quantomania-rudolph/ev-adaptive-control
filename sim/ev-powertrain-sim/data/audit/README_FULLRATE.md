@@ -1,0 +1,1 @@
+The two full-rate runs (`fr_battery_sag_awg.parquet`, 96 MB; `fr_plain_hidden_aw.parquet`, 84 MB) ship in the separate zip `ev-powertrain-sim_audit_fullrate.zip`. Unzip it next to this folder so the files land here. Without them `dashboard/build_dash2.py` and the full-rate identity tests cannot run; everything else works.

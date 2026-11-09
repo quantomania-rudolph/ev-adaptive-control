@@ -1,0 +1,33 @@
+layout,test,ms
+table_unsorted,bulk_load_s,3099.097673000017
+table_sorted,bulk_load_s,2305.20933599999
+table_sorted+ART,bulk_load_s,2882.1030259999816
+parquet_1file,bulk_load_s,2272.4238189999824
+parquet_perrun,bulk_load_s,7945.163957000005
+table_unsorted,Q1 one whole run,24.919056999976874
+table_unsorted,Q2 1000-row window,2.917594000024337
+table_unsorted,"Q3 one column, all runs",18.590364999994335
+table_unsorted,Q4 64 random 256-row windows,80.07089799997402
+table_sorted,Q1 one whole run,16.25399900001412
+table_sorted,Q2 1000-row window,2.0759450000014112
+table_sorted,"Q3 one column, all runs",18.427352999992763
+table_sorted,Q4 64 random 256-row windows,84.83629799999903
+table_sorted+ART,Q1 one whole run,19.1003250000108
+table_sorted+ART,Q2 1000-row window,1.901633999978003
+table_sorted+ART,"Q3 one column, all runs",18.388987999998108
+table_sorted+ART,Q4 64 random 256-row windows,82.42488700000195
+parquet_1file,Q1 one whole run,46.16471700001057
+parquet_1file,Q2 1000-row window,28.544133999986343
+parquet_1file,"Q3 one column, all runs",41.35851800000978
+parquet_1file,Q4 64 random 256-row windows,543.9522499999896
+parquet_perrun,Q1 one whole run,50.0699030000078
+parquet_perrun,Q2 1000-row window,22.795607999995582
+parquet_perrun,"Q3 one column, all runs",61.17539100000613
+parquet_perrun,Q4 64 random 256-row windows,320.8579719999989
+table_unsorted,append_one_run,61.294834999984005
+table_sorted,append_one_run,157.01127500000212
+table_sorted+ART,append_one_run,80.22954200001209
+parquet_perrun,append_one_run,98.57804200001397
+tum_table,load_35780_rows,483.5493449999717
+tum_table,TUM slice 60 s of one track,0.723093999994262
+tum_table,TUM mean power per track,1.41953199999989

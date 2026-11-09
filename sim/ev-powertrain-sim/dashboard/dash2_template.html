@@ -1,0 +1,159 @@
+<title>Powertrain Mismatch Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* layout: one narrow column, three questions, each answered by a table or two charts */
+:root{--bg:#f6f7f9;--surf:#ffffff;--ink:#14202b;--ink2:#4a5a68;--mute:#7b8995;--line:#dde3e8;
+--req:#1f5fbf;--del:#d9680f;--lim:#14202b;--good:#1d7a4a;--bad:#b3261e;--warn:#9a6a00;--bar:#9fb3c6;
+--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e151b;--surf:#16202a;--ink:#e6edf3;--ink2:#a9b6c2;--mute:#7d8b97;--line:#27343f;
+--req:#6aa3f0;--del:#f09a4d;--lim:#e6edf3;--good:#4cc38a;--bad:#ff8a80;--warn:#e3b341;--bar:#46627a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e151b;--surf:#16202a;--ink:#e6edf3;--ink2:#a9b6c2;--mute:#7d8b97;--line:#27343f;
+--req:#6aa3f0;--del:#f09a4d;--lim:#e6edf3;--good:#4cc38a;--bad:#ff8a80;--warn:#e3b341;--bar:#46627a;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;padding-block:24px;
+padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:36px}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:18px;margin:0 0 4px;text-wrap:balance}
+p{margin:0;max-width:68ch;color:var(--ink2)}
+.sub{font-size:14px}
+section{display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel{background:var(--surf);border:1px solid var(--line);border-radius:6px;padding:14px;min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--surf);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.tile b{display:block;font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--mute)}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:600}
+td.n{font-family:var(--mono);text-align:right} th.n{text-align:right}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid currentColor}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surf);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--req);box-shadow:inset 0 0 0 1px var(--req)}
+button:focus-visible{outline:2px solid var(--req);outline-offset:2px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+.cap{font-size:13px;font-weight:600;margin-bottom:2px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--ink2);flex-wrap:wrap;margin-bottom:4px}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{fill:var(--mute);font-size:11px;font-family:var(--sans)}
+.bar{display:grid;grid-template-columns:minmax(120px,190px) 1fr 64px;gap:10px;align-items:center;font-size:13px;padding:3px 0}
+.bar .tr{height:10px;background:var(--line);border-radius:2px;overflow:hidden}
+.bar .fl{height:100%;background:var(--bar);border-radius:0 3px 3px 0}
+.bar code{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+ul{margin:0;padding-left:18px;color:var(--ink2);font-size:14px;display:flex;flex-direction:column;gap:4px;max-width:78ch}
+.tip{position:fixed;pointer-events:none;background:var(--surf);border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:12px;font-family:var(--mono);z-index:5;display:none;white-space:nowrap}
+</style>
+<main>
+<header>
+  <h1>Powertrain Mismatch Board</h1>
+  <p class="sub">A toy electric-vehicle motor drive. The controller asks for a voltage, the inverter delivers a different one, and the shaft gets a different torque than requested. This page shows how big each of those gaps is, and whether the data behind them can be trusted.</p>
+</header>
+
+<section id="s1">
+  <div><h2>1. Does protection help?</h2>
+  <p>Median over 20 random seeds per row (cycles: 5). The envelope column is the share of runs whose current stayed inside the allowed limit. Lower numbers are better in every other column.</p></div>
+  <div class="panel wrap"><table id="head"></table></div>
+</section>
+
+<section id="s2">
+  <div><h2>2. Asked for versus delivered</h2>
+  <p>Full-rate logs, 8 seconds, 0.1 ms steps. The shaded band is the battery or voltage event. Pick a run.</p></div>
+  <div class="seg" id="pick"></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="charts">
+    <div class="panel"><div class="cap">Voltage: requested vs delivered</div>
+      <div class="legend"><span><i style="background:var(--req)"></i>requested by controller</span><span><i style="background:var(--del)"></i>delivered to motor</span><span><i style="background:var(--lim)"></i>ceiling</span></div>
+      <svg id="cv" viewBox="0 0 480 220"></svg></div>
+    <div class="panel"><div class="cap">Shaft torque: requested vs delivered</div>
+      <div class="legend"><span><i style="background:var(--req)"></i>requested torque</span><span><i style="background:var(--del)"></i>motor torque</span></div>
+      <svg id="ct" viewBox="0 0 480 220"></svg></div>
+  </div>
+  <div class="panel"><div class="cap">Where the voltage gap comes from (RMS volts, delivered minus requested)</div>
+    <p style="font-size:13px;margin-bottom:8px">The six pieces add up exactly to the total, sample by sample. A large piece is where to look first.</p>
+    <div id="ledger"></div></div>
+</section>
+
+<section id="s3">
+  <div><h2>3. Can the data be trusted?</h2>
+  <p>Automatic checks on every stored run file: time moves forward, no missing or infinite values, every column documented, and energy books closing.</p></div>
+  <div class="panel wrap"><table id="trust"></table></div>
+  <div class="panel"><div class="cap">Known limits</div>
+    <ul>
+      <li>Energy gaps (shaft and electrical) survive any logging rate. Checks built on derivatives, such as the magnetic power term, need the full 0.1 ms logs and are marked invalid on thinned files.</li>
+      <li>Stored seed-0 rows are sampled every 17 steps so they do not line up with the 10-step speed loop. Averages are unbiased; individual spikes can still fall between rows.</li>
+      <li>Battery curves, sensor noise, inverter dead-time and BMS timing are assumed values, not measurements of a real pack.</li>
+      <li>The Tesla trace needs up to 1.5 times the small motor's torque, so it is scaled and some steps are infeasible by design.</li>
+    </ul></div>
+</section>
+</main>
+<div class="tip" id="tip"></div>
+<script>
+const D=/*__DATA__*/null;
+const $=s=>document.querySelector(s), f=(v,d=3)=>v==null?"–":(+v).toPrecision(d).replace(/\.?0+$/,"").replace(/e\+?/,"e");
+const NAME={naive:"Naive adaptive",robust:"Robust",aw:"Anti-windup",awg:"Anti-windup + governor",awg_:""};
+const SC={base:"No event",hidden:"Hidden voltage limit",oracle:"Hidden limit, ceiling known",sag:"Battery sag",sagbase:"Battery, no sag",udds:"UDDS drive cycle",tesla:"Tesla drive trace"};
+// section 1
+(function(){
+  let h="<tr><th>Scenario</th><th>Controller</th><th class='n'>Envelope kept</th><th class='n'>Flux error</th><th class='n'>Speed error (rad/s)</th><th class='n'>Shaft energy unserved (kJ)</th><th class='n'>Inverter error (V)</th></tr>";
+  let last="";
+  const SO=["base","hidden","oracle","sagbase","sag","udds","tesla"],CO=["naive","robust","aw","awg"];D.headline.sort((a,b)=>SO.indexOf(a.scen)-SO.indexOf(b.scen)||CO.indexOf(a.ctl)-CO.indexOf(b.ctl));
+  for(const r of D.headline){
+    const e=r.env==null?"<td class='n'>–</td>":`<td class='n'><span class='pill ${r.env>=.95?"good":"bad"}'>${Math.round(r.env*100)}%</span></td>`;
+    h+=`<tr><td>${r.scen!==last?SC[r.scen]||r.scen:""}</td><td>${NAME[r.ctl]||r.ctl}</td>${e}<td class='n'>${f(r.psi)}</td><td class='n'>${f(r.spd)}</td><td class='n'>${f(r.eun)}</td><td class='n'>${f(r.inv)}</td></tr>`;
+    last=r.scen;
+  }
+  $("#head").innerHTML=h;
+})();
+// section 2
+const tip=$("#tip");
+function line(svg,m,series,unit,ceil){
+  const W=480,H=220,L=44,R=8,T=8,B=24,n=m.t.length;
+  const all=series.flatMap(s=>m[s.k]).concat(ceil?m[ceil]:[]).filter(v=>v!=null);
+  let lo=Math.min(0,...all),hi=Math.max(...all);hi+= (hi-lo)*.05;
+  const x=i=>L+(W-L-R)*i/(n-1),y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  const tmax=m.t[n-1];let s="";
+  if(m.event){const a=L+(W-L-R)*m.event[0]/tmax,b=L+(W-L-R)*m.event[1]/tmax;s+=`<rect x="${a}" y="${T}" width="${b-a}" height="${H-T-B}" fill="var(--line)" opacity=".6"/>`}
+  for(let k=0;k<=4;k++){const v=lo+(hi-lo)*k/4;s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${f(v,3)}</text>`}
+  for(let k=0;k<=4;k++){const t=tmax*k/4;s+=`<text x="${L+(W-L-R)*k/4}" y="${H-6}" text-anchor="middle">${f(t,2)} s</text>`}
+  const path=(arr,col,w,dash)=>`<polyline fill="none" stroke="${col}" stroke-width="${w}" ${dash?'stroke-dasharray="4 3"':""} points="${arr.map((v,i)=>v==null?"":x(i).toFixed(1)+","+y(v).toFixed(1)).join(" ")}"/>`;
+  if(ceil)s+=path(m[ceil],"var(--lim)",1.2,true);
+  for(const q of series)s+=path(m[q.k],q.c,2);
+  s+=`<text x="${L}" y="${T+2}" dy="-0" style="display:none">${unit}</text><rect id="${svg.id}h" x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent"/>`;
+  svg.innerHTML=s;
+  svg.querySelector("rect:last-child").onmousemove=ev=>{
+    const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)/r.width*W,i=Math.max(0,Math.min(n-1,Math.round((px-L)/(W-L-R)*(n-1))));
+    tip.style.display="block";tip.style.left=ev.clientX+12+"px";tip.style.top=ev.clientY+12+"px";
+    tip.innerHTML=`t=${f(m.t[i],3)} s<br>`+series.map(q=>`${q.n}: ${f(m[q.k][i])} ${unit}`).join("<br>");};
+  svg.querySelector("rect:last-child").onmouseleave=()=>tip.style.display="none";
+}
+function show(key){
+  const m=D.mismatch[key];
+  document.querySelectorAll("#pick button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===key));
+  const T=(v,l,u)=>`<div class="tile"><b>${v}</b><span>${l}</span></div>`;
+  $("#tiles").innerHTML=T(f(m.total_rms)+" V","RMS voltage gap")+T(f(m.peak_gap)+" V","peak voltage gap")+
+    T(f(m.torque_gap_rms)+" N·m","RMS torque gap")+T(f(m.e_shaft_kj)+" kJ","shaft energy unserved (– = surplus)")+
+    T(m.e_elec_kj==null?"–":f(m.e_elec_kj)+" kJ","electrical energy unserved (– = surplus)")+T(f(m.hidden_clip_max)+" V","hidden clipping (must be 0)")+
+    T(f(m.sat_pct)+" %","time at voltage ceiling");
+  line($("#cv"),m,[{k:"u_req",c:"var(--req)",n:"requested"},{k:"u_del",c:"var(--del)",n:"delivered"}],"V","u_lim");
+  line($("#ct"),m,[{k:"T_req",c:"var(--req)",n:"requested"},{k:"T_del",c:"var(--del)",n:"motor"}],"N·m");
+  const mx=Math.max(...m.ledger.map(l=>l.rms));
+  $("#ledger").innerHTML=m.ledger.map(l=>`<div class="bar"><span>${l.label}</span><div class="tr"><div class="fl" style="width:${100*l.rms/mx}%"></div></div><code>${f(l.rms)} V</code></div>`).join("")+
+    `<div class="bar"><b>Total</b><div class="tr"></div><code><b>${f(m.total_rms)} V</b></code></div>`;
+}
+$("#pick").innerHTML=Object.entries(D.mismatch).map(([k,m])=>`<button data-k="${k}" aria-pressed="false">${m.title}</button>`).join("");
+$("#pick").onclick=e=>{if(e.target.dataset.k)show(e.target.dataset.k)};
+show(Object.keys(D.mismatch)[0]);
+// section 3
+(function(){
+  let h="<tr><th>File family</th><th class='n'>Files</th><th class='n'>Rows</th><th class='n'>Time monotone</th><th class='n'>No bad values</th><th class='n'>Files with undocumented columns</th><th class='n'>Derivative checks valid</th></tr>";
+  for(const r of D.trust.families){
+    const ok=(a,b)=>`<td class='n'><span class='${a===b?"good":"warn"}'>${a}/${b}</span></td>`;
+    h+=`<tr><td>${r.family}</td><td class='n'>${r.files}</td><td class='n'>${r.rows.toLocaleString()}</td>${ok(r.monotone,r.files)}${ok(r.finite,r.files)}<td class='n'><span class='${r.cat_missing?"warn":"good"}'>${r.cat_missing}</span></td>${ok(r.derivative_ok,r.files)}</tr>`;
+  }
+  h+=`<tr><td colspan="7" style="color:var(--mute)">${D.trust.files} files audited against a ${D.trust.catalog}-column catalog.</td></tr>`;
+  $("#trust").innerHTML=h;
+})();
+</script>

@@ -1,0 +1,209 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,longtable,hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue}
+\setlength{\parskip}{4pt}
+\title{EV Powertrain Sim: The Math Behind the Project}
+\author{Reference for learning (generated from the code, 2026-10-27)}
+\date{}
+\begin{document}
+\maketitle
+
+\section*{How to use this document}
+Each section gives an equation, what each symbol means, and where it lives in the code. Symbols are defined where they first appear and collected in Section 11. The sign convention is the most important thing to learn first.
+
+\section{Conventions}
+\begin{itemize}
+\item \textbf{Mismatch sign:} $\delta = u_{\text{delivered}} - u_{\text{requested}}$. A negative $\delta$ means the actuator gave less than asked.
+\item \textbf{dq frame:} the rotor frame. $d$ is aligned with the rotor flux, $q$ is 90 degrees ahead. Torque comes from $i_q$.
+\item \textbf{Electrical vs mechanical angle:} $\omega_{el} = p\,\omega_m$, where $p$ is the number of pole pairs.
+\item \textbf{Disturbance sign:} a positive $T_{dist}$ opposes motion (a hill or headwind).
+\item \textbf{Dot notation:} $\dot{x} = dx/dt$.
+\end{itemize}
+
+\section{Motor plant (the $\dot{x} = f(x) + g(x)u + d$ form)}
+State $x = [i_d,\, i_q,\, \omega_m]^\top$, input $u = [u_d,\, u_q]^\top$ (the voltage actually delivered), disturbance $d$.
+\begin{align}
+\frac{di_d}{dt} &= \frac{-R\,i_d + \omega_{el} L_q\, i_q}{L_d} + \frac{u_d}{L_d} + \frac{\delta u_d}{L_d}\\
+\frac{di_q}{dt} &= \frac{-R\,i_q - \omega_{el}\,(L_d i_d + \psi)}{L_q} + \frac{u_q}{L_q} + \frac{\delta u_q}{L_q}\\
+\frac{d\omega_m}{dt} &= \frac{\tfrac{3}{2}\,p\,\big(\psi + (L_d - L_q)\,i_d\big)\, i_q - T_{fric}}{J} - \frac{T_{dist}}{J}
+\end{align}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$R$ & stator resistance (18 mOhm in the notes) \\
+$L_d, L_q$ & d and q inductances (0.37 mH and 1.2 mH) \\
+$\psi$ & magnet flux linkage (0.066 Wb) \\
+$p$ & pole pairs (3) \\
+$J$ & total inertia (rotor plus load) \\
+$\delta u_d, \delta u_q$ & actuator mismatch (delivered minus requested) \\
+\bottomrule
+\end{tabular}
+
+\subsection*{Reading it as $f + gu + d$}
+\begin{itemize}
+\item $f(x)$: the drift. Resistance, back-EMF, and the reluctance term from $L_d \neq L_q$, plus friction.
+\item $g(x)u$: the input. $g = \mathrm{diag}(1/L_d,\, 1/L_q)$ for the currents and nothing for speed.
+\item $d$: the disturbance vector. $d_{id} = \delta u_d / L_d$, $d_{iq} = \delta u_q/L_q$, $d_w = -T_{dist}/J$. The first two depend on the input, which is why they are the notes' $d(u,x)$.
+\end{itemize}
+
+\subsection*{Torque and power}
+\begin{align}
+T_e &= \tfrac{3}{2}\,p\,\big(\psi + (L_d - L_q)\, i_d\big)\, i_q\\
+P_{el} &= \tfrac{3}{2}\,(u_d i_d + u_q i_q)
+\end{align}
+The $3/2$ factor comes from the amplitude-invariant transform (Section 2).
+
+\section{Transforms (abc $\leftrightarrow$ dq)}
+Clarke (amplitude-invariant, full three-phase):
+\begin{equation}
+\alpha = \tfrac{2}{3}\left(i_a - \tfrac{1}{2} i_b - \tfrac{1}{2} i_c\right), \qquad
+\beta = \tfrac{2}{3}\cdot\tfrac{\sqrt{3}}{2}\,(i_b - i_c)
+\end{equation}
+This cancels any equal offset on the three phases. Park (rotation to the rotor frame):
+\begin{equation}
+i_d = \cos\theta\,\alpha + \sin\theta\,\beta, \qquad i_q = -\sin\theta\,\alpha + \cos\theta\,\beta
+\end{equation}
+Rotation matrix: $R(\phi) = \begin{pmatrix}\cos\phi & -\sin\phi\\ \sin\phi & \cos\phi\end{pmatrix}$.
+
+\subsection*{Effect of an angle error $\delta$ (measured angle $\theta_m = \theta + \delta$)}
+\begin{equation}
+i_{dq,m} = R(-\delta)\, i_{dq}, \qquad u_{true} = R(\delta)\, u_{cmd}, \qquad i_{d,m} = i_q \sin\delta + i_d\cos\delta
+\end{equation}
+The last expression is the first-order picture: a small angle error leaks $i_q$ into the $d$ measurement.
+
+\section{Actuator saturation (what the inverter can deliver)}
+With bus voltage $V_{dc}$, the largest voltage vector that can be produced in the dq plane is a disc of radius $V_{dc}/\sqrt{3}$, capped at 173.2 V (the hardware limit in the sim). The projection onto the disc is
+\begin{equation}
+u_{app} = u_{cmd}\cdot \min\!\left(1,\ \frac{u_{lim}}{|u_{cmd}|}\right), \qquad u_{lim} = \min\!\left(\frac{V_{dc}}{\sqrt{3}},\ 173.2\right)
+\end{equation}
+This is isotropic and keeps the direction of $u_{cmd}$. The inverter's dead-time and device-drop errors are added after the clip:
+\begin{equation}
+u_{gem} = u_{app} + u_{extra}
+\end{equation}
+The controller cannot see the clip or the errors, which is the point.
+
+\section{Battery and DC link (\texttt{battery.py})}
+\begin{itemize}
+\item \textbf{Open-circuit voltage:} $V_{oc} = n_s \cdot \mathrm{OCV}(\text{SOC})$, with the OCV curve interpolated from a table (generic shape, not fitted).
+\item \textbf{Temperature-dependent resistance (generic, Arrhenius):} $R_0(T) = R_{0,25}\exp\!\big(2500\,(1/T - 1/298.15)\big)$.
+\item \textbf{RC branch (exact update, step $\Delta t$):} $V_1 \leftarrow V_1 + (i_b R_1 - V_1)\,(1 - e^{-\Delta t/\tau_1})$.
+\item \textbf{Bus voltage (implicit, one step):} $C\,\dot V = i_b - i_{dc}$ with $i_b = (e_{eff} - V)/R_s$, where $e_{eff} = V_{oc} - V_1$ and $R_s = R_0 + R_c$. Solving:
+\begin{equation}
+V_{new} = \frac{V C/\Delta t + e_{eff}/R_s - i_{dc}}{C/\Delta t + 1/R_s}
+\end{equation}
+\item \textbf{BMS current clamp:} $i_b \leftarrow \mathrm{clip}(i_b,\ -i_{chg},\ i_{dis})$. The capacitor takes the rest.
+\item \textbf{Inverter DC draw:} $i_{dc} = P_{dc}/V$ with $P_{dc} = P_{el} + P_{loss}$ and $P_{loss} = P_{idle} + R_{inv}(P_{el}/V)^2$ (simple assumption).
+\item \textbf{SOC and thermal:} $\mathrm{SOC} \leftarrow \mathrm{SOC} - i_b\Delta t/Q$; $\dot T = \big(i_b^2(R_0 + R_1) - (T - T_{amb})/R_{th}\big)/C_{th}$.
+\end{itemize}
+
+\section{Controller (\texttt{control\_fw.py})}
+\subsection*{Speed loop (PI with anti-windup, runs every 10 steps)}
+\begin{align}
+e_\omega &= \omega_{ref} - \omega_m, \qquad u_{unsat} = K_{p,\omega} e_\omega + I_\omega\\
+i_{q,ref} &= \mathrm{clip}(u_{unsat},\ -i_{lim},\ i_{lim}), \qquad i_{ref,clip} = i_{q,ref} - u_{unsat}\\
+\dot I_\omega &= K_{i,\omega} e_\omega + 5\, i_{ref,clip}
+\end{align}
+Gains from the belief $J$: $K_{p,\omega} = J\,\mathrm{bw}/K_t$, $K_{i,\omega} = K_{p,\omega}\,\mathrm{bw}/4$, where $K_t$ is the torque constant and $\mathrm{bw}$ is the speed bandwidth.
+With the governor on, $i_{lim}$ is replaced by the feasible current from the voltage ellipse:
+\begin{equation}
+i_{v} = \frac{1}{L_q}\sqrt{\max\!\left(\left(\frac{u_{nom}}{\omega_{el}}\right)^2 - \psi_{belief}^2,\ 0\right)}
+\end{equation}
+
+\subsection*{Flux (adaptive) law}
+The estimate $\hat\psi$ is updated with the current error $e_a$:
+\begin{equation}
+\dot{\hat\psi} = -\Gamma\,\omega_{el}\, e_a
+\end{equation}
+Modes:
+\begin{itemize}
+\item \textbf{naive:} $e_a = e = i_q - i_{q,ref}$.
+\item \textbf{aw (anti-windup):} an auxiliary state $\dot z = (-k_i z + \delta u_{q,known})/L_q$, and $e_a = e - z$. The controller learns only from the part of the error the voltage limit did not explain.
+\item \textbf{robust:} adds a leak term $-\sigma(\hat\psi - \psi_{nom})$ and projects $\hat\psi$ onto $[\psi_{min}, \psi_{max}]$.
+\end{itemize}
+
+\subsection*{Voltage law (feedforward plus PI-like correction)}
+\begin{align}
+u_q &= R\, i_q + \omega_{el}\,(L_d i_d + \hat\psi) - k_i\, e\\
+u_d &= R\, i_d - \omega_{el} L_q\, i_q - k_i\, i_d
+\end{align}
+The controller then clips its own command against the ceiling it believes in, using the same disc projection as Section 4. It logs $\delta u_{q,known}$ = (clipped minus requested) for the anti-windup state.
+
+\subsection*{Angle advance (compensates the one-step delay)}
+\begin{equation}
+\theta_{adv} = d \cdot \omega_{el}\cdot \Delta t, \qquad u_{sent} = R(\theta_{adv})\, u_{clip}
+\end{equation}
+Here $d$ is the delay in steps. The GEM plant already includes a half-step, so the advance is $d$, not $d + 0.5$ (this was a red-team correction).
+
+\section{Mismatch ledger (exact decomposition)}
+Each step, the total mismatch splits into physical pieces:
+\begin{equation}
+\delta u = \delta u_{ctrl\_clip} + \delta u_{adv} + \delta u_{delay} + \delta u_{rot} + \delta u_{plant\_clip} + \delta u_{inv}
+\end{equation}
+The electrical power gap of the mismatch is
+\begin{equation}
+\Delta P = \tfrac{3}{2}\big(\delta u_d\, i_d + \delta u_q\, i_q\big)
+\end{equation}
+and the energy gap is $\Delta E = \int \Delta P\, dt$. The books close: the pieces sum to the total in every run (checked on all 12 seed-0 runs).
+
+\section{Sensors and measurement chain (\texttt{sensors.py})}
+\begin{itemize}
+\item \textbf{Quantization (mid-tread, round half to even):} $\mathrm{LSB} = 2 i_{range}/2^{bits}$, and $q(v) = \mathrm{round}(v/\mathrm{LSB})\cdot\mathrm{LSB}$.
+\item \textbf{Current:} $i_m = \mathrm{clip}\big(q((1 + g)\,i + b + \sigma_i\, n)\big)$, with $n \sim \mathcal{N}(0,1)$.
+\item \textbf{Resolver angle:} $\theta_m = \theta + \delta_{res} + \sigma_\theta n$, with $\sigma_\theta = 0.3^\circ$.
+\item \textbf{Speed:} a second-order phase-locked loop (PLL) tracks the resolver angle and outputs $\omega_m$.
+\item \textbf{DC-bus voltage:} $V_m = $ divider $\cdot$ (first-order low-pass, exactly discretized) $+ \sigma_v n$, with $\sigma_v = 0.5$ V.
+\item \textbf{Battery message (BMS):} sampled every 50 ms, delayed 20 ms, current limits quantized to 1 A, multiplicative error $(1 + e)$ with $e \sim \mathcal{N}(0, 0.05)$.
+\end{itemize}
+
+\section{Disturbance torques}
+\begin{align}
+T_{fric} &= a + b\,\omega_m + c\,\omega_m|\omega_m| &&\text{(rolling, viscous, aerodynamic)}\\
+T_{dist} &= \frac{m\, g\, \sin\theta_{grade}}{k} &&\text{(grade, from the TUM elevation)}\\
+\theta_{grade} &= \arctan\!\big(\mathrm{clip}(\text{slope},\ -0.15,\ 0.15)\big) &&\text{(slope over a 30 s window of distance)}
+\end{align}
+The grade has edge artifacts: the first and last 15 s use an extrapolated value.
+
+\section{Statistics used in the matrix (\texttt{analyze\_matrix.py})}
+\begin{itemize}
+\item \textbf{Ultimate error:} $\max|\tilde\psi|$ over the last 1.0 s of an 8 s run, where $\tilde\psi = \hat\psi - \psi$.
+\item \textbf{Wilson 95\% interval for a proportion $\hat p = k/n$:}
+\begin{equation}
+\frac{\hat p + \frac{z^2}{2n} \pm z\sqrt{\frac{\hat p(1-\hat p)}{n} + \frac{z^2}{4n^2}}}{1 + z^2/n}, \qquad z = 1.96
+\end{equation}
+\item \textbf{Mann--Whitney test (A5):} protected controller's ultimate error is smaller than naive's; passes if the median ratio is below 0.25 and $p < 0.01$.
+\item \textbf{Bounded input (A1):} $\max|u|/u_{ceiling} \le 1 + 10^{-9}$.
+\end{itemize}
+
+\section{Stability notes (what is and is not proven)}
+\begin{itemize}
+\item \textbf{BIBO:} the input is bounded by the disc clip in every run (A1). This does not guarantee a bounded estimate.
+\item \textbf{UUB (uniformly ultimately bounded):} the protected controllers settle into a bounded region whose size depends on the mismatch. The robust mode with projection gives this. The aw mode is only observed, not proven, when the ceiling is hidden.
+\item \textbf{Assumptions:} the d/q model holds below base speed (about 200 rad/s); the adaptive law's sign was checked by simulation. A proof is Theory's job (decision D1).
+\end{itemize}
+
+\section{Variable dictionary}
+\begin{longtable}{@{}ll@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$i_d, i_q$ & dq currents (A) \\
+$u_d, u_q$ & dq voltages (V) \\
+$\omega_m, \omega_{el}$ & mechanical and electrical speed (rad/s) \\
+$\theta$ & electrical angle (rad) \\
+$\psi, \hat\psi, \tilde\psi$ & true flux, estimate, error (Wb) \\
+$\Gamma, \sigma, k_i$ & adaptive gain, leak, PI gain \\
+$T_e, T_{fric}, T_{dist}$ & electrical, friction, grade torques (N m) \\
+$J$ & total inertia (kg m$^2$) \\
+$V_{dc}, V_{oc}, V_1$ & bus, open-circuit, RC branch voltages (V) \\
+$i_b, i_{dc}$ & battery and inverter DC current (A) \\
+$\mathrm{SOC}, T$ & state of charge, battery temperature \\
+$\delta u$ & mismatch, delivered minus requested (V) \\
+$\Delta P, \Delta E$ & mismatch power (W) and energy (J) \\
+$\mathrm{LSB}$ & ADC step size (A) \\
+$z$ & anti-windup auxiliary state \\
+\bottomrule
+\end{longtable}
+
+\end{document}

@@ -1,0 +1,381 @@
+<title>Powertrain Data Viewer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style>
+/* Layout: one narrow-ish column, a sticky run switch, then evidence panels read top to bottom: asked vs got -> mismatch -> disturbance -> energy -> natural process -> full catalog. */
+:root {
+  --bg: #f3f4f6; --panel: #ffffff; --ink: #0f1318; --ink2: #4b525c; --muted: #7d848e;
+  --grid: #e3e6ea; --axis: #c3c8cf; --band: rgba(235,104,52,.10); --hair: rgba(15,19,24,.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --good: #0b7a3c; --bad: #c0342f;
+  --display: "Fraunces", Georgia, serif; --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1116; --panel: #161a21; --ink: #eef0f3; --ink2: #b9bec7; --muted: #8a919c;
+    --grid: #232830; --axis: #343a44; --band: rgba(217,89,38,.16); --hair: rgba(255,255,255,.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --good: #3ecf7c; --bad: #ff7a73; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1116; --panel: #161a21; --ink: #eef0f3; --ink2: #b9bec7; --muted: #8a919c;
+  --grid: #232830; --axis: #343a44; --band: rgba(217,89,38,.16); --hair: rgba(255,255,255,.10);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --good: #3ecf7c; --bad: #ff7a73; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 28px 64px; display: grid; gap: 22px; }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(28px, 5vw, 40px); line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h2 { font-size: 17px; margin: 0; font-weight: 600; text-wrap: balance; }
+p { margin: 0; }
+.lede { color: var(--ink2); max-width: 66ch; margin-top: 10px; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px;
+  display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; border-bottom: 1px solid var(--hair); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; font-size: 13px; padding: 7px 12px; background: transparent; color: var(--ink2); border: 0; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--axis); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.bar small { color: var(--muted); font-size: 12.5px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.tile { background: var(--panel); border: 1px solid var(--hair); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.tile b { display: block; font-family: var(--mono); font-weight: 500; font-size: 24px; letter-spacing: -.02em; }
+.tile span { color: var(--ink2); font-size: 12.5px; }
+.panel { background: var(--panel); border: 1px solid var(--hair); border-radius: 10px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.why { color: var(--ink2); font-size: 13.5px; max-width: 78ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink2); }
+.legend i { display: inline-block; width: 18px; height: 0; border-top: 2.5px solid; vertical-align: middle; margin-right: 6px; }
+.legend code, .tag { font-family: var(--mono); font-size: 12px; color: var(--ink); }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+.chart text { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--axis); border-radius: 8px;
+  padding: 6px 9px; font-family: var(--mono); font-size: 11.5px; box-shadow: 0 4px 14px rgba(0,0,0,.14); white-space: nowrap; z-index: 3; }
+.tip div { display: flex; gap: 8px; justify-content: space-between; }
+.tip i { display: inline-block; width: 10px; height: 0; border-top: 2.5px solid; align-self: center; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.grid3 > div { min-width: 0; display: grid; gap: 4px; }
+.cap { font-size: 12.5px; font-weight: 600; }
+.cap em { font-style: normal; font-weight: 400; color: var(--muted); font-family: var(--mono); }
+.checks { display: grid; gap: 8px; }
+.chk { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; font-size: 13.5px; padding-block: 6px; border-top: 1px solid var(--hair); }
+.chk:first-child { border-top: 0; }
+.chk .ok { color: var(--good); font-weight: 600; font-size: 12px; }
+.chk .v { font-family: var(--mono); font-size: 13px; }
+.chk small { grid-column: 2 / 4; color: var(--muted); font-size: 12px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.filters input, .filters select { font: inherit; font-size: 13.5px; padding: 7px 10px; border: 1px solid var(--axis); border-radius: 8px; background: var(--bg); color: var(--ink); min-width: 0; }
+.filters input { flex: 1 1 200px; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--hair); border-radius: 8px; max-height: 560px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 780px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+th { position: sticky; top: 0; background: var(--panel); font-size: 12px; color: var(--ink2); font-weight: 600; z-index: 1; }
+td.n { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+td.num { font-family: var(--mono); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.pick { cursor: pointer; }
+tr.pick:hover td, tr.sel td { background: var(--bg); }
+.role { font-size: 11.5px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--axis); color: var(--ink2); white-space: nowrap; }
+.role.mismatch, .role.disturbance { border-color: var(--s2); color: var(--ink); }
+.foot { color: var(--muted); font-size: 12.5px; }
+
+.scrub { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.scrub button { font: inherit; font-size: 13px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--axis); background: var(--ink); color: var(--bg); cursor: pointer; min-width: 84px; }
+.scrub input[type=range] { flex: 1 1 260px; min-width: 0; accent-color: var(--s1); }
+.scrub output { font-family: var(--mono); font-size: 14px; min-width: 76px; text-align: right; }
+.stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.stage { border: 1px solid var(--hair); border-radius: 10px; padding: 10px 12px; background: var(--bg); min-width: 0; display: grid; gap: 2px; align-content: start; }
+.stage h3 { margin: 0 0 4px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink2); font-weight: 600; }
+.stage div { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }
+.stage div span { color: var(--muted); }
+.stage div b { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+.links { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.link { border: 1px solid var(--hair); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+.link.bad { border-color: var(--s2); }
+.link h3 { margin: 0; font-size: 12.5px; font-weight: 600; }
+.link .nums { font-family: var(--mono); font-size: 12px; color: var(--ink2); display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.meter { height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--s1); }
+.link.bad .meter i { background: var(--s2); }
+.link small { color: var(--muted); font-size: 11.5px; }
+@media (max-width: 520px) { .bar { gap: 8px; } .tile b { font-size: 21px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>What the powertrain tells the data team</h1>
+    <p class="lede">Every number below comes from the real simulation: a 3-phase permanent-magnet motor with a field-oriented controller. The motor is fed by a modelled battery pack and DC-link capacitor. At the shaded moment the battery management system cuts the allowed pack current. Switch the run to see what an unprotected controller does and what a protected one does, and watch what each channel records.</p>
+  </header>
+
+  <div class="bar">
+    <div class="seg" id="runseg" role="group" aria-label="Run"></div>
+    <small id="runnote"></small>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="panel">
+    <h2>1. Watch the event travel through the powertrain</h2>
+    <p class="why">Press play or drag the slider. Each card is one stage of the chain from pack to road. Each box below is a request-versus-delivery gap at one hand-off, with the share that actually arrived. In the shaded window the BMS cuts the allowed pack current, and you can follow the loss from the first box to the last.</p>
+    <div class="scrub"><button type="button" id="play" aria-label="Play or pause">Play</button><input id="sl" type="range" min="0" max="1999" value="1" aria-label="Time"><output id="tt" for="sl"></output></div>
+    <div class="stages" id="stages"></div>
+    <div class="links" id="links"></div>
+  </section>
+
+  <section class="panel">
+    <h2>2. What the controller asked for, and what the motor got</h2>
+    <p class="why">This is the clipped saturation. The controller requests a voltage on the q axis (dashed). The inverter can only deliver up to the ceiling (orange). The solid line is what was applied. The shaded band is the unannounced sag. The scale stops at 260 V: where the dashed line leaves the top, the request is far larger (hover for the value).</p>
+    <div class="legend" id="lg1"></div><div class="chart" id="c1"></div>
+  </section>
+
+  <section class="panel">
+    <h2>3. The mismatch, step by step</h2>
+    <p class="why">Delivered minus requested, in volts, on both axes. Zero means the request was honoured. This is the M2 ledger row, logged every 100 µs, plus a second check against the plant's own reported voltage that proves nothing was clipped behind our back.</p>
+    <div class="legend" id="lg2"></div><div class="chart" id="c2"></div>
+  </section>
+
+  <section class="panel">
+    <h2>4. The disturbance vector d</h2>
+    <p class="why">The plant is written as <span class="tag">x&#775; = f(x) + g(x)u + d</span>. Here <span class="tag">d</span> has three parts: the voltage the actuator failed to deliver, acting on each current, and the road load acting on speed. Hover to read values. Units are rates of change.</p>
+    <div class="grid3">
+      <div><div class="cap">d_id <em>A/s</em> &middot; d-axis actuator mismatch</div><div class="chart" id="c3a"></div></div>
+      <div><div class="cap">d_iq <em>A/s</em> &middot; q-axis actuator mismatch</div><div class="chart" id="c3b"></div></div>
+      <div><div class="cap">d_w <em>rad/s&sup2;</em> &middot; road load (road and grade load)</div><div class="chart" id="c3c"></div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>5. Energy requested but never delivered</h2>
+    <p class="why">The torque request implies a shaft power. The difference between that and the power the shaft actually produced, added up over time, is the energy the powertrain owed and did not pay. Before the event it stays near zero. Afterwards the protected run stops accumulating, and the unprotected one keeps going.</p>
+    <div class="grid3">
+      <div><div class="cap">Shortfall power <em>W</em> &middot; dP_mech</div><div class="chart" id="c4a"></div></div>
+      <div><div class="cap">Cumulative shortfall <em>J</em> &middot; E_mech_unserved</div><div class="chart" id="c4b"></div></div>
+      <div><div class="cap">Torque shortfall <em>N&middot;m</em> &middot; d_T</div><div class="chart" id="c4c"></div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>6. The natural process underneath</h2>
+    <p class="why">Back-EMF grows with speed and eats the voltage budget before the controller gets to use any of it. When the ceiling falls below the back-EMF plus the demand, the motor cannot follow its request.</p>
+    <div class="grid3">
+      <div><div class="cap">Voltage budget <em>V</em></div><div class="legend" id="lg5a"></div><div class="chart" id="c5a"></div></div>
+      <div><div class="cap">Speed <em>rad/s</em></div><div class="legend" id="lg5b"></div><div class="chart" id="c5b"></div></div>
+      <div><div class="cap">Currents <em>A</em></div><div class="legend" id="lg5c"></div><div class="chart" id="c5c"></div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>7. The battery and DC link</h2>
+    <p class="why">The pack current limit is the physical cause of the event. When the inverter asks for more current than the BMS allows, the DC-link capacitor covers the gap for a few milliseconds, then the bus voltage collapses and takes the inverter ceiling with it.</p>
+    <div class="grid3">
+      <div><div class="cap">Bus voltage <em>V</em></div><div class="legend" id="lgb1"></div><div class="chart" id="cb1"></div></div>
+      <div><div class="cap">Current asked vs delivered <em>A</em></div><div class="legend" id="lgb2"></div><div class="chart" id="cb2"></div></div>
+      <div><div class="cap">Bus mismatch <em>A</em> &middot; d_i_dc</div><div class="chart" id="cb3"></div></div>
+      <div><div class="cap">Ceiling lost <em>V</em> &middot; ceiling_loss</div><div class="chart" id="cb4"></div></div>
+      <div><div class="cap">Burned in the BMS limiter <em>W</em></div><div class="chart" id="cb5"></div></div>
+      <div><div class="cap">State of charge <em>-</em></div><div class="chart" id="cb6"></div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>8. Does the data obey physics?</h2>
+    <p class="why">Three independent checks on the run selected above. They matter because analysts will build models from these columns, and a column that disagrees with the physics would quietly poison them.</p>
+    <div class="checks" id="checks"></div>
+  </section>
+
+  <section class="panel">
+    <h2>9. Every channel, in one catalog</h2>
+    <p class="why">Pick a row to plot it for both runs together. Min, max and rms are over the full logged run.</p>
+    <div class="filters">
+      <input id="q" type="search" placeholder="Search name or description" aria-label="Search channels">
+      <select id="grp" aria-label="Filter by group"></select>
+      <select id="rol" aria-label="Filter by role"></select>
+    </div>
+    <div class="cap" id="expTitle"></div>
+    <div class="legend" id="lgx"></div>
+    <div class="chart" id="cx"></div>
+    <div class="tablewrap"><table><thead><tr><th>Channel</th><th>Unit</th><th>Role</th><th>Meaning</th><th style="text-align:right">min</th><th style="text-align:right">max</th><th style="text-align:right">rms</th></tr></thead><tbody id="tb"></tbody></table></div>
+  </section>
+
+  <p class="foot">Each run is shown at about 2,000 points per channel. The full logged data is in the parquet files. Sign convention: delta = delivered &minus; requested.</p>
+</div>
+
+<script>
+const D = /*__DATA__*/null;
+const RUNS = Object.keys(D.runs);
+const T = D.t, EV = D.event || [4.5, 5.5];
+let run = RUNS[0];
+let sel = "d_u_q";
+const cs = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = v => { const a = Math.abs(v); if (a === 0) return "0"; if (a >= 1e5 || a < 1e-3) return v.toExponential(2); if (a >= 100) return v.toFixed(0); if (a >= 10) return v.toFixed(1); return v.toFixed(2); };
+const $ = id => document.getElementById(id);
+const charts = [];
+
+function niceTicks(lo, hi, n = 4) {
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const span = hi - lo, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw);
+  const a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step, out = [];
+  for (let v = a; v <= b + step / 2; v += step) out.push(+v.toPrecision(10));
+  return out;
+}
+
+/* series: [{run,key,label,color,dash,width}] ; color is a CSS var name so both themes work */
+function chart(el, series, opts = {}) {
+  const spec = { el, series, opts, id: charts.length + Math.random().toString(36).slice(2, 6) }; charts.push(spec); draw(spec);
+}
+function draw(spec) {
+  const { el, series, opts } = spec, H = opts.h || 210;
+  const W = Math.max(el.clientWidth, 240), m = { l: 52, r: 10, t: 8, b: 22 };
+  const ser = series.map(s => ({ ...s, y: D.runs[s.run === "$" ? run : s.run][s.key] }));
+  let lo = Infinity, hi = -Infinity;
+  ser.forEach(s => s.y.forEach(v => { if (v < lo) lo = v; if (v > hi) hi = v; }));
+  if (opts.ymax !== undefined) { hi = opts.ymax; lo = opts.ymin ?? lo; }
+  const ticks = niceTicks(lo, hi, 4); lo = ticks[0]; hi = ticks[ticks.length - 1];
+  const X = t => m.l + (t / T[T.length - 1]) * (W - m.l - m.r), Y = v => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+  let g = `<rect x="${X(EV[0])}" y="${m.t}" width="${X(EV[1]) - X(EV[0])}" height="${H - m.t - m.b}" fill="var(--band)"/>`;
+  ticks.forEach(v => g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === 0 ? 'var(--axis)' : 'var(--grid)'}" stroke-width="1"/><text x="${m.l - 6}" y="${Y(v) + 3.5}" text-anchor="end">${fmt(v)}</text>`);
+  const span = T[T.length - 1], tstep = niceTicks(0, span, W < 420 ? 3 : 6); const tk = tstep[1] - tstep[0];
+  for (let s = 0; s <= span + 1e-9; s += tk) g += `<text x="${X(s)}" y="${H - 5}" text-anchor="middle">${s}s</text>`;
+  g += `<clipPath id="k${spec.id}"><rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}"/></clipPath><g clip-path="url(#k${spec.id})">`;
+  ser.forEach(s => {
+    let d = ""; s.y.forEach((v, i) => d += (i ? "L" : "M") + X(T[i]).toFixed(1) + " " + Y(v).toFixed(1));
+    g += `<path d="${d}" fill="none" stroke="var(${s.color})" stroke-width="${s.width || 2}" ${s.dash ? `stroke-dasharray="${s.dash}"` : ""} stroke-linejoin="round" stroke-linecap="round"/>`;
+  });
+  g += `</g><line id="x" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink2)" stroke-width="1" visibility="hidden"/>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${opts.label || ''}">${g}</svg><div class="tip" hidden></div>`;
+  const svg = el.firstChild, tip = el.lastChild, line = svg.querySelector("#x");
+  const move = e => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * (W / r.width);
+    const f = Math.min(1, Math.max(0, (px - m.l) / (W - m.l - m.r))), i = Math.round(f * (T.length - 1));
+    line.setAttribute("x1", X(T[i])); line.setAttribute("x2", X(T[i])); line.setAttribute("visibility", "visible");
+    tip.hidden = false;
+    tip.innerHTML = `<div><span>t</span><b>${T[i].toFixed(3)} s</b></div>` + ser.map(s => `<div><i style="border-color:var(${s.color})"></i><span>${s.label}</span><b>${fmt(s.y[i])}</b></div>`).join("");
+    const tw = tip.offsetWidth, left = (X(T[i]) / W) * r.width;
+    tip.style.left = Math.min(Math.max(left + 12, 0), r.width - tw) + "px"; tip.style.top = "4px";
+  };
+  svg.addEventListener("pointermove", move);
+  svg.addEventListener("pointerleave", () => { tip.hidden = true; line.setAttribute("visibility", "hidden"); });
+}
+const redrawAll = () => charts.forEach(draw);
+new ResizeObserver(() => redrawAll()).observe(document.body);
+
+function legend(id, items) {
+  $(id).innerHTML = items.map(s => `<span><i style="border-color:var(${s.color});${s.dash ? 'border-top-style:dashed' : ''}"></i><code>${s.label}</code></span>`).join("");
+}
+const S = (key, label, color, extra = {}) => ({ run: "$", key, label, color, ...extra });
+
+function build() {
+  charts.length = 0;
+  const s1 = [S("u_q_cmd", "u_q_cmd asked", "--ink2", { dash: "5 4", width: 1.6 }), S("u_q_app", "u_q_app delivered", "--s1"), S("u_limit", "u_limit ceiling", "--s2", { width: 1.6 })];
+  legend("lg1", s1); chart($("c1"), s1, { h: 250, ymin: 0, ymax: 260, label: "Requested versus delivered q-axis voltage" });
+  const s2 = [S("d_u_q", "d_u_q", "--s1"), S("d_u_d", "d_u_d", "--s3"), S("d_u_plant_q", "d_u_plant_q hidden clip", "--s2", { width: 1.4 })];
+  legend("lg2", s2); chart($("c2"), s2, { h: 210, label: "Delivered minus requested voltage" });
+  chart($("c3a"), [S("d_id", "d_id", "--s3")], { h: 170 });
+  chart($("c3b"), [S("d_iq", "d_iq", "--s1")], { h: 170 });
+  chart($("c3c"), [S("d_w", "d_w", "--s2")], { h: 170 });
+  chart($("c4a"), [S("dP_mech", "dP_mech", "--s1")], { h: 170 });
+  chart($("c4b"), RUNS.map((r, i) => ({ run: r, key: "E_mech_unserved", label: r, color: r === RUNS[0] ? "--s2" : "--s1" })), { h: 170 });
+  chart($("c4c"), [S("d_T", "d_T", "--s3")], { h: 170 });
+  const a = [S("bemf", "bemf", "--s3"), S("v_demand_mag", "|u_cmd|", "--ink2", { dash: "5 4", width: 1.5 }), S("u_limit", "u_limit", "--s2", { width: 1.6 })];
+  legend("lg5a", a); chart($("c5a"), a, { h: 190, ymin: 0, ymax: 260 });
+  const b = [S("omega_ref", "omega_ref", "--ink2", { dash: "5 4", width: 1.5 }), S("omega_m", "omega_m", "--s1")];
+  legend("lg5b", b); chart($("c5b"), b, { h: 190 });
+  const c = [S("i_d", "i_d", "--s3"), S("i_q", "i_q", "--s1")];
+  legend("lg5c", c); chart($("c5c"), c, { h: 190 });
+  if (hasBatt()) {
+    const b1 = [S("V_oc", "V_oc open-circuit", "--ink2", { dash: "5 4", width: 1.5 }), S("V_dc", "V_dc bus", "--s1")];
+    legend("lgb1", b1); chart($("cb1"), b1, { h: 190, ymin: 0, ymax: 340 });
+    const b2 = [S("i_dc", "i_dc asked", "--ink2", { dash: "5 4", width: 1.5 }), S("i_batt", "i_batt delivered", "--s1"), S("i_batt_max", "BMS limit", "--s2", { width: 1.5 })];
+    legend("lgb2", b2); chart($("cb2"), b2, { h: 190, ymin: -20, ymax: 260 });
+    chart($("cb3"), [S("d_i_dc", "d_i_dc", "--s1")], { h: 170 });
+    chart($("cb4"), [S("ceiling_loss", "ceiling_loss", "--s2")], { h: 170 });
+    chart($("cb5"), [S("P_bms_clip", "P_bms_clip", "--s3")], { h: 170 });
+    chart($("cb6"), [S("soc", "soc", "--s1")], { h: 170 });
+  }
+  flow();
+  explorer();
+}
+const hasBatt = () => D.runs[run].i_batt !== undefined;
+let fi = 1, timer = null;
+function flow() {
+  const r = D.runs[run], g = k => r[k][fi], B = hasBatt();
+  $("tt").textContent = T[fi].toFixed(2) + " s";
+  $("sl").value = fi;
+  const row = (a, b, u) => `<div><span>${a}</span><b>${b}${u ? " " + u : ""}</b></div>`;
+  const uapp = Math.hypot(g("u_d_app"), g("u_q_app")), ucmd = g("v_demand_mag");
+  const st = [];
+  if (B) st.push(`<div class="stage"><h3>Battery</h3>${row("SOC", (g("soc") * 100).toFixed(2), "%")}${row("open circuit", fmt(g("V_oc")), "V")}${row("current out", fmt(g("i_batt")), "A")}${row("BMS limit", fmt(g("i_batt_max")), "A")}</div>`);
+  st.push(`<div class="stage"><h3>DC link</h3>${row("bus voltage", fmt(g("V_dc")), "V")}${row("ceiling", fmt(g("u_limit")), "V")}${B ? row("inverter draws", fmt(g("i_dc")), "A") : ""}</div>`);
+  st.push(`<div class="stage"><h3>Inverter</h3>${row("asked", fmt(ucmd), "V")}${row("delivered", fmt(uapp), "V")}${row("saturated", g("saturated") ? "yes" : "no")}</div>`);
+  st.push(`<div class="stage"><h3>Motor</h3>${row("i_d", fmt(g("i_d")), "A")}${row("i_q", fmt(g("i_q")), "A")}${row("torque", fmt(g("T_elec")), "N.m")}${row("back-EMF", fmt(g("bemf")), "V")}</div>`);
+  st.push(`<div class="stage"><h3>Shaft</h3>${row("speed", fmt(g("omega_m")), "rad/s")}${row("target", fmt(g("omega_ref")), "rad/s")}${row("road torque", fmt(g("T_dist") + g("T_fric")), "N.m")}</div>`);
+  $("stages").innerHTML = st.join("");
+  const link = (title, asked, got, unit, note, bad) => {
+    const frac = asked > 1e-6 ? Math.max(0, Math.min(1, got / asked)) : 1;
+    return `<div class="link ${bad ? "bad" : ""}"><h3>${title}</h3><div class="meter" role="img" aria-label="${(frac * 100).toFixed(0)} percent delivered"><i style="width:${(frac * 100).toFixed(1)}%"></i></div><div class="nums"><span>asked ${fmt(asked)}</span><span>got ${fmt(got)}</span><span>${unit}</span></div><small>${(frac * 100).toFixed(0)}% arrived. ${note}</small></div>`;
+  };
+  const L = [];
+  if (B) L.push(link("Battery to bus", g("i_dc"), g("i_batt"), "A", g("bms_limited") ? "BMS limit is holding the pack back." : "Pack keeps up.", g("bms_limited") > 0));
+  L.push(link("Bus to inverter ceiling", 173.2, g("u_limit"), "V", g("u_limit") < 170 ? "Bus voltage has cost headroom." : "Full ceiling.", g("u_limit") < 170));
+  L.push(link("Inverter to motor", ucmd, uapp, "V", g("saturated") ? "Request clipped; direction kept." : "Request honoured.", g("saturated") > 0));
+  const tq = Math.abs(g("T_cmd")) > 1e-6 ? g("T_elec") : 0;
+  L.push(link("Motor to shaft", g("T_cmd"), g("T_elec"), "N.m", "Torque the current request implied versus actual.", g("T_cmd") > 1 && g("T_elec") < 0.9 * g("T_cmd")));
+  L.push(link("Shaft to driver", g("omega_ref"), g("omega_m"), "rad/s", "Speed the driver asked for versus actual.", g("omega_ref") > 1 && g("omega_m") < 0.95 * g("omega_ref")));
+  $("links").innerHTML = L.join("");
+}
+$("sl").max = T.length - 1;
+$("sl").addEventListener("input", e => { fi = +e.target.value; flow(); });
+$("play").onclick = () => {
+  if (timer) { clearInterval(timer); timer = null; $("play").textContent = "Play"; return; }
+  if (fi >= T.length - 2) fi = 1;
+  $("play").textContent = "Pause";
+  timer = setInterval(() => { fi = Math.min(fi + Math.max(1, Math.round(T.length / 330)), T.length - 1); flow(); if (fi >= T.length - 1) { clearInterval(timer); timer = null; $("play").textContent = "Play"; } }, 33);
+};
+function explorer() {
+  const row = D.catalog.find(c => c.name === sel);
+  $("expTitle").innerHTML = `<span class="tag">${sel}</span> <em style="font-style:normal;color:var(--muted)">${row.unit} &middot; ${row.desc}</em>`;
+  const ss = RUNS.map(r => ({ run: r, key: sel, label: r, color: r === RUNS[0] ? "--s2" : "--s1" }));
+  $("lgx").innerHTML = RUNS.map(r => `<span><i style="border-color:var(${r === RUNS[0] ? '--s2' : '--s1'})"></i><code>${D.labels[r] || r}</code></span>`).join("");
+  const i = charts.findIndex(x => x.el === $("cx")); if (i >= 0) charts.splice(i, 1);
+  chart($("cx"), ss, { h: 220 });
+}
+
+/* run switch + tiles + checks */
+function head() {
+  $("runseg").innerHTML = RUNS.map(r => `<button type="button" aria-pressed="${r === run}" data-r="${r}">${D.labels[r] || r}</button>`).join("");
+  $("runseg").querySelectorAll("button").forEach(b => b.onclick = () => { run = b.dataset.r; head(); build(); table(); });
+  const c = D.checks[run];
+  $("runnote").textContent = run === RUNS[0] ? "Unprotected: the estimator is fooled by the saturation." : "Protected: anti-windup plus a feasibility governor.";
+  const tiles = [
+    [D.catalog.length, "channels per timestep"], [c.rate_hz.toLocaleString() + " Hz", "logging rate"], [c.rows.toLocaleString(), "rows in this run"],
+    [c.sat_pct + "%", "of steps saturated"], [c.peak_du + " V", "largest single-step shortfall"], [c.e_mech_kj + " kJ", "shaft energy owed, never paid"]];
+  $("tiles").innerHTML = tiles.map(t => `<div class="tile"><b>${t[0]}</b><span>${t[1]}</span></div>`).join("");
+  const na = c.decimated;
+  const rows = [
+    ["Current model matches measured dynamics", na ? "n/a" : `${c.resid_iq_pct}% / ${c.resid_id_pct}%`, na ? "Needs the full-rate log: a derivative taken between logged rows is not the derivative the plant integrated." : "Residual of f + g&middot;u + d against the measured derivative, as a share of f (q axis / d axis).", na],
+    ["Speed equation matches", na ? "n/a" : `${c.resid_w_pct}%`, na ? "Same reason: needs the full-rate log." : "Residual of the mechanical torque balance against measured acceleration.", na],
+    ["Electrical power balances", na ? "n/a" : `${c.power_pct}%`, na ? "Same reason: needs the full-rate log." : "Input power minus copper loss, magnetic storage and shaft power, as a share of shaft rms power.", na],
+    ...(c.chain_w !== undefined ? [["Battery energy chain closes", `${c.chain_w} W`, "Chemical power minus pack losses, bus power and BMS limiter heat. Max over the run. Holds at any logging rate.", false], ["DC-link current balance", na ? "n/a" : `${c.bus_w} W`, na ? "Needs the full-rate log." : "Bus voltage times (pack current minus inverter current) against the capacitor's C V dV/dt. Rms over the run.", na]] : []),
+    ["No hidden clipping inside the simulator", `${c.m3_max} V`, "Plant-reported voltage minus the voltage we applied. Zero means our saturation is the only one acting. Holds at any logging rate.", false]];
+  $("checks").innerHTML = rows.map(r => `<div class="chk"><span class="ok" style="${r[3] ? 'color:var(--muted)' : ''}">${r[3] ? "SKIP" : "PASS"}</span><span>${r[0]}</span><span class="v">${r[1]}</span><small>${r[2]}</small></div>`).join("");
+}
+
+/* catalog */
+function table() {
+  const q = $("q").value.toLowerCase(), g = $("grp").value, r = $("rol").value, st = D.stats[run];
+  const rows = D.catalog.filter(c => (!q || (c.name + " " + c.desc).toLowerCase().includes(q)) && (!g || c.group === g) && (!r || c.role === r));
+  $("tb").innerHTML = rows.map(c => { const s = st[c.name]; return `<tr class="pick ${c.name === sel ? 'sel' : ''}" data-n="${c.name}" tabindex="0"><td class="n">${c.name}</td><td>${c.unit}</td><td><span class="role ${c.role}">${c.role}</span></td><td>${c.desc}</td><td class="num">${fmt(s[0])}</td><td class="num">${fmt(s[1])}</td><td class="num">${fmt(s[2])}</td></tr>`; }).join("") || `<tr><td colspan="7">No channel matches.</td></tr>`;
+  $("tb").querySelectorAll("tr.pick").forEach(tr => {
+    const go = () => { sel = tr.dataset.n; table(); explorer(); $("expTitle").scrollIntoView({ block: "nearest" }); };
+    tr.onclick = go; tr.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
+  });
+}
+const uniq = k => [...new Set(D.catalog.map(c => c[k]))];
+$("grp").innerHTML = `<option value="">All groups</option>` + uniq("group").map(v => `<option>${v}</option>`).join("");
+$("rol").innerHTML = `<option value="">All roles</option>` + uniq("role").map(v => `<option>${v}</option>`).join("");
+["q", "grp", "rol"].forEach(id => $(id).addEventListener("input", table));
+head(); build(); table();
+</script>

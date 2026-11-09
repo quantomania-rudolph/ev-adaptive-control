@@ -1,0 +1,23 @@
+{
+  "name": "B",
+  "mode": "naive",
+  "event": true,
+  "governor": false,
+  "T_END": 8.0,
+  "tau": 0.0001,
+  "gamma": 2e-05,
+  "sigma": 2.0,
+  "k_i": 3.0,
+  "psi_true": 0.066,
+  "psi_hat0": 0.0462,
+  "wall_s": 20.5,
+  "steps": 80000,
+  "gem": "3.0.3",
+  "scenario": {
+    "t_event": [
+      4.5,
+      5.5
+    ],
+    "u_event": 25.0
+  }
+}

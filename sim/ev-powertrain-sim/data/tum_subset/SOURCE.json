@@ -1,0 +1,11 @@
+{
+  "origin": "TUM Tesla Model 3 CAN traces, CC BY 4.0, doi:10.14459/2024mp1735471",
+  "files_sha256_of_full_original_csv": {
+    "track_0.csv": "d522efb2cf381ca5fb9f4dcc557385034b869e34f32fc77b5ebfa49d41e99ec7",
+    "track_1.csv": "738767d6efae44d1ea20546b2e0c115fceb06eb9a9c67f2f129b80864aa3cdef",
+    "track_10.csv": "6640266214c950dba0dd4719e1f14c27c3872c26fa925198de24d02f106b0db0",
+    "track_100.csv": "c53a957d82537f383a08e7009b9fe290c0d5fdfae0673c76d2189bfa63bd17dd",
+    "track_103.csv": "9048a11136e9e07fe51319512a617292f6bf3719e994bb084ba48c991d957029"
+  },
+  "note": "columns subset only; no values altered"
+}

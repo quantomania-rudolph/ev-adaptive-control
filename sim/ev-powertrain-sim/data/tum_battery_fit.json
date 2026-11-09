@@ -1,0 +1,1135 @@
+{
+ "envelope_real": {
+  "bin_uses_pooled_fallback_dis_chg": [
+   [
+    false,
+    false
+   ],
+   [
+    false,
+    false
+   ],
+   [
+    false,
+    false
+   ],
+   [
+    true,
+    true
+   ],
+   [
+    true,
+    true
+   ],
+   [
+    true,
+    true
+   ],
+   [
+    false,
+    false
+   ],
+   [
+    true,
+    true
+   ],
+   [
+    true,
+    true
+   ],
+   [
+    true,
+    true
+   ],
+   [
+    false,
+    false
+   ]
+  ],
+  "coverage": {
+   "chg": 1.0,
+   "dis": 0.99512
+  },
+  "i_chg_lim_a": [
+   195.09,
+   195.195,
+   194.25,
+   193.935,
+   193.935,
+   193.935,
+   131.775,
+   193.935,
+   193.935,
+   193.935,
+   124.215
+  ],
+  "i_chg_lim_flat_a": [
+   193.935,
+   193.935,
+   193.935,
+   193.935,
+   193.935,
+   193.935,
+   193.935,
+   193.935,
+   193.935,
+   193.935,
+   193.935
+  ],
+  "i_dis_lim_a": [
+   262.232,
+   443.94,
+   556.659,
+   509.775,
+   509.775,
+   509.775,
+   385.14,
+   509.775,
+   509.775,
+   509.775,
+   724.605
+  ],
+  "i_dis_lim_flat_a": [
+   509.775,
+   509.775,
+   509.775,
+   509.775,
+   509.775,
+   509.775,
+   509.775,
+   509.775,
+   509.775,
+   509.775,
+   509.775
+  ],
+  "inflation_factor": 1.05,
+  "note": "observed-use envelope: the q-quantile of what the cars drew, NOT a BMS limit and NOT a pack rating. Covers >= 99 % of the observed samples by construction. Only SOC 0.52-0.60, 0.62, 0.80 and 0.985 were observed; bins marked as fallback use the pooled quantile and outside [0.50, 1.00] the value is held flat.",
+  "observed_soc_range": [
+   0.516,
+   0.988
+  ],
+  "pooled_quantile_a": {
+   "chg": 184.7,
+   "dis": 485.5
+  },
+  "quantile": 0.995,
+  "samples_per_bin_dis_chg": [
+   [
+    6012,
+    1994
+   ],
+   [
+    6465,
+    1187
+   ],
+   [
+    6280,
+    1393
+   ],
+   [
+    311,
+    47
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    6617,
+    1762
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    2616,
+    1026
+   ]
+  ],
+  "soc_dependence_identified": false,
+  "soc_dependence_note": "each SOC cluster is ONE trip, so SOC dependence is confounded with driving style/route/ambient; the per-bin values are what was observed, not a SOC law. *_flat_a is the pooled alternative.",
+  "soc_grid": [
+   0.5,
+   0.55,
+   0.6,
+   0.65,
+   0.7,
+   0.75,
+   0.8,
+   0.85,
+   0.9,
+   0.95,
+   1.0
+  ]
+ },
+ "generic_toy_pack_per_unit": {
+  "31100": {
+   "r0_plus_rbus_pu": 0.0293722222,
+   "r1_pu": 0.0165866667,
+   "total_pu": 0.0459588889
+  },
+  "65000": {
+   "r0_plus_rbus_pu": 0.0613888889,
+   "r1_pu": 0.0346666667,
+   "total_pu": 0.0960555556
+  }
+ },
+ "pack_real": {
+  "base_note": "p_base_w is the largest discharge power SEEN in the five tracks (use maximum, not a pack rating)",
+  "i_base_a": 667.241472,
+  "ocv_detail": {
+   "bounds_active": {
+    "K1_at_0": false,
+    "K2_at_0": true
+   },
+   "delta_ocv_0p58_to_0p98_when_track_dropped_V": {
+    "track_0": 3.27721961,
+    "track_1": 3.40803243,
+    "track_10": 3.40045267,
+    "track_100": 3.51605419,
+    "track_103": 3.46537022
+   },
+   "design_condition_number": 28.04438,
+   "k": [
+    353.016745,
+    6.4326341,
+    0.0
+   ],
+   "k_ci95": [
+    [
+     352.193866,
+     353.26279
+    ],
+    [
+     5.25829586,
+     7.65806551
+    ],
+    [
+     -0.348556685,
+     0.0
+    ]
+   ],
+   "n_rest_points": 7400,
+   "note": "FLAT and WEAKLY IDENTIFIED: rest points sit on four SOC clusters (about 0.53, 0.58-0.63, 0.80, 0.985); rest voltage still contains unrelaxed polarization; K1 and K2 are strongly correlated and the lower SOC range (< 0.5) is NOT observed at all. Use OCV(s) only inside the observed SOC range.",
+   "ocv_at_soc": {
+    "0.5": {
+     "ci95": [
+      347.920794,
+      348.988031
+     ],
+     "mid": 348.557983
+    },
+    "0.6": {
+     "ci95": [
+      349.291846,
+      349.997086
+     ],
+     "mid": 349.730791
+    },
+    "0.8": {
+     "ci95": [
+      351.332094,
+      351.742409
+     ],
+     "mid": 351.581344
+    },
+    "0.98": {
+     "ci95": [
+      352.592631,
+      353.50613
+     ],
+     "mid": 352.886788
+    }
+   },
+   "rest_clusters": {
+    "track_0": {
+     "n": 342,
+     "soc_mean": 0.625401163,
+     "v_mean": 349.552125,
+     "v_sd": 0.738172618
+    },
+    "track_1": {
+     "n": 3662,
+     "soc_mean": 0.553748156,
+     "v_mean": 349.532628,
+     "v_sd": 2.15056117
+    },
+    "track_10": {
+     "n": 2214,
+     "soc_mean": 0.803514125,
+     "v_mean": 351.552377,
+     "v_sd": 0.385845855
+    },
+    "track_100": {
+     "n": 255,
+     "soc_mean": 0.537746709,
+     "v_mean": 349.234314,
+     "v_sd": 0.716616519
+    },
+    "track_103": {
+     "n": 927,
+     "soc_mean": 0.982901175,
+     "v_mean": 352.862821,
+     "v_sd": 0.949920105
+    }
+   },
+   "soc_range_of_rest_points": [
+    0.516,
+    0.988
+   ]
+  },
+  "ocv_k": [
+   353.016745,
+   6.4326341,
+   0.0
+  ],
+  "ocv_real_v_at_soc": {
+   "0.6": 349.730791,
+   "0.8": 351.581344,
+   "0.98": 352.886788
+  },
+  "p_base_w": 232306.791,
+  "r_eff_by_window_ohm": {
+   "0.1": 0.0386741627,
+   "0.3": 0.0443667995,
+   "0.5": 0.0473668997,
+   "1.0": 0.0516024903
+  },
+  "r_eff_by_window_pu": {
+   "0.1": 0.0741182366,
+   "0.3": 0.0850280579,
+   "0.5": 0.0907776881,
+   "1.0": 0.0988951103
+  },
+  "r_eff_by_window_pu_ci95": {
+   "0.1": [
+    0.0647262633,
+    0.0834058602
+   ],
+   "0.3": [
+    0.0747683608,
+    0.0942176345
+   ],
+   "0.5": [
+    0.0810968225,
+    0.100221065
+   ],
+   "1.0": [
+    0.0903320931,
+    0.107948759
+   ]
+  },
+  "r_eff_methods": {
+   "best_lag_samples_by_track": {
+    "track_0": {
+     "abs_corr": 0.808152846,
+     "lag": -3
+    },
+    "track_1": {
+     "abs_corr": 0.60327951,
+     "lag": -2
+    },
+    "track_10": {
+     "abs_corr": 0.816001985,
+     "lag": -2
+    },
+    "track_100": {
+     "abs_corr": 0.914005991,
+     "lag": -1
+    },
+    "track_103": {
+     "abs_corr": 0.879737948,
+     "lag": -1
+    }
+   },
+   "ci95_ohm": {
+    "eiv_deming": {
+     "0.1": [
+      0.0355751825,
+      0.0439287176
+     ],
+     "0.3": [
+      0.0396859685,
+      0.0498164615
+     ],
+     "0.5": [
+      0.0426917403,
+      0.0525555728
+     ],
+     "1.0": [
+      0.0477501118,
+      0.0568871461
+     ]
+    },
+    "held_aware_ols": {
+     "0.1": [
+      0.0337735239,
+      0.0435203528
+     ],
+     "0.3": [
+      0.0390133911,
+      0.0491618297
+     ],
+     "0.5": [
+      0.0423155198,
+      0.0522943602
+     ],
+     "1.0": [
+      0.0471343926,
+      0.0563265946
+     ]
+    },
+    "lag_aligned": {
+     "0.1": [
+      0.0409249623,
+      0.0467861656
+     ],
+     "0.3": [
+      0.0475118234,
+      0.0548469021
+     ],
+     "0.5": [
+      0.0493328516,
+      0.0583891892
+     ],
+     "1.0": [
+      0.0535569747,
+      0.0605357587
+     ]
+    },
+    "naive_raw": {
+     "0.1": [
+      0.00849948257,
+      0.0117638459
+     ],
+     "0.3": [
+      0.0232010738,
+      0.0318342525
+     ],
+     "0.5": [
+      0.0327437339,
+      0.042635923
+     ],
+     "1.0": [
+      0.0468697492,
+      0.0529072141
+     ]
+    }
+   },
+   "eiv_statement": "EIV estimate = Deming regression through the origin with the noise variance ratio taken from rest-time sample noise; it is ~ OLS because sample noise is tiny against the driving dI. The dominant errors-in-variables effect is TIMING (held frames, current-voltage lag), reported as the lag-aligned diagnostic. No claim is made that either removes the timing error.",
+   "hold_rule_sensitivity_ohm": {
+    "plateau_if_run_gt_10_rows_any_level": {
+     "0.1": 0.0189257111,
+     "0.3": 0.0337964951,
+     "0.5": 0.0412280541,
+     "1.0": 0.0508546749
+    },
+    "plateau_if_run_gt_20_rows_any_level": {
+     "0.1": 0.0368678153,
+     "0.3": 0.0437042625,
+     "0.5": 0.0469582363,
+     "1.0": 0.0514112785
+    },
+    "plateau_if_run_gt_4_rows_any_level": {
+     "0.1": 0.0118968839,
+     "0.3": 0.0275361578,
+     "0.5": 0.0378404644,
+     "1.0": 0.0499172451
+    },
+    "plateau_if_run_gt_6_rows_any_level": {
+     "0.1": 0.0128981406,
+     "0.3": 0.0284385907,
+     "0.5": 0.0379327145,
+     "1.0": 0.049927774
+    }
+   },
+   "long_hold_evidence": {
+    "track_0": {
+     "mean_voltage_range_in_long_runs_v": 6.4725,
+     "mean_voltage_range_in_updating_windows_v": 0.961944444,
+     "n_long_runs": 4
+    },
+    "track_1": {
+     "mean_voltage_range_in_long_runs_v": 8.06557143,
+     "mean_voltage_range_in_updating_windows_v": 0.923478261,
+     "n_long_runs": 70
+    },
+    "track_10": {
+     "mean_voltage_range_in_long_runs_v": 11.935,
+     "mean_voltage_range_in_updating_windows_v": 0.976358382,
+     "n_long_runs": 2
+    },
+    "track_100": {
+     "mean_voltage_range_in_long_runs_v": null,
+     "mean_voltage_range_in_updating_windows_v": 1.38087248,
+     "n_long_runs": 0
+    },
+    "track_103": {
+     "mean_voltage_range_in_long_runs_v": 21.57,
+     "mean_voltage_range_in_updating_windows_v": 2.16061538,
+     "n_long_runs": 1
+    }
+   },
+   "notes": {
+    "ci": "block bootstrap, 600 rows (60 s) blocks within tracks, 200 resamples, seed 20240611",
+    "lag_note": "voltage responds 0.1 to 0.3 s after the recorded current on tracks 0/1/10: this is physics (fast polarization) and/or CAN timing; the data cannot separate them",
+    "primary": "held_aware_ols (interpolate between update rows, OLS through origin, pooled by sum of squares)"
+   },
+   "per_track_ohm": {
+    "eiv_deming": {
+     "0.1": {
+      "track_0": 0.0400683103,
+      "track_1": 0.035581876,
+      "track_10": 0.0439246491,
+      "track_100": 0.0306473105,
+      "track_103": 0.0523619439
+     },
+     "0.3": {
+      "track_0": 0.0431865121,
+      "track_1": 0.0413208066,
+      "track_10": 0.0499264235,
+      "track_100": 0.0381349392,
+      "track_103": 0.0572235189
+     },
+     "0.5": {
+      "track_0": 0.0458866617,
+      "track_1": 0.0447641087,
+      "track_10": 0.0535784785,
+      "track_100": 0.0404863364,
+      "track_103": 0.0589450826
+     },
+     "1.0": {
+      "track_0": 0.051691928,
+      "track_1": 0.0493894276,
+      "track_10": 0.0584670195,
+      "track_100": 0.0424687646,
+      "track_103": 0.0613895982
+     }
+    },
+    "held_aware_ols": {
+     "0.1": {
+      "track_0": 0.0391480474,
+      "track_1": 0.0338198443,
+      "track_10": 0.0429932817,
+      "track_100": 0.030487873,
+      "track_103": 0.0515583333
+     },
+     "0.3": {
+      "track_0": 0.0424396981,
+      "track_1": 0.0396187981,
+      "track_10": 0.0491150455,
+      "track_100": 0.0380221664,
+      "track_103": 0.0566428514
+     },
+     "0.5": {
+      "track_0": 0.0452062464,
+      "track_1": 0.0431519536,
+      "track_10": 0.0528543349,
+      "track_100": 0.0404092345,
+      "track_103": 0.0584685898
+     },
+     "1.0": {
+      "track_0": 0.0511660904,
+      "track_1": 0.0480679179,
+      "track_10": 0.0579399867,
+      "track_100": 0.0424324449,
+      "track_103": 0.0610526633
+     }
+    },
+    "lag_aligned": {
+     "0.1": {
+      "track_0": 0.0457366435,
+      "track_1": 0.0434593974,
+      "track_10": 0.0472492363,
+      "track_100": 0.0306405336,
+      "track_103": 0.0498011182
+     },
+     "0.3": {
+      "track_0": 0.0511541323,
+      "track_1": 0.0498018858,
+      "track_10": 0.0547086809,
+      "track_100": 0.0390110321,
+      "track_103": 0.0591249241
+     },
+     "0.5": {
+      "track_0": 0.0545248186,
+      "track_1": 0.0526726624,
+      "track_10": 0.0593977593,
+      "track_100": 0.0413585325,
+      "track_103": 0.060741947
+     },
+     "1.0": {
+      "track_0": 0.0585157718,
+      "track_1": 0.0558267078,
+      "track_10": 0.0637146069,
+      "track_100": 0.0430015829,
+      "track_103": 0.0626284289
+     }
+    },
+    "naive_raw": {
+     "0.1": {
+      "track_0": 0.0102771032,
+      "track_1": 0.00787722999,
+      "track_10": 0.0114918517,
+      "track_100": 0.0148407006,
+      "track_103": 0.0170190643
+     },
+     "0.3": {
+      "track_0": 0.0236838474,
+      "track_1": 0.022702852,
+      "track_10": 0.0297537557,
+      "track_100": 0.0331213238,
+      "track_103": 0.0439237687
+     },
+     "0.5": {
+      "track_0": 0.0345520802,
+      "track_1": 0.0333659109,
+      "track_10": 0.0430107664,
+      "track_100": 0.0388601722,
+      "track_103": 0.0525902507
+     },
+     "1.0": {
+      "track_0": 0.0496741511,
+      "track_1": 0.0473075419,
+      "track_10": 0.0533015377,
+      "track_100": 0.0418681482,
+      "track_103": 0.0600536991
+     }
+    }
+   },
+   "pooled_ohm": {
+    "eiv_deming": {
+     "0.1": 0.0399634464,
+     "0.3": 0.0455642555,
+     "0.5": 0.0484710507,
+     "1.0": 0.0524769751
+    },
+    "held_aware_ols": {
+     "0.1": 0.0386741627,
+     "0.3": 0.0443667995,
+     "0.5": 0.0473668997,
+     "1.0": 0.0516024903
+    },
+    "lag_aligned": {
+     "0.1": 0.0440257185,
+     "0.3": 0.0513763204,
+     "0.5": 0.0542792654,
+     "1.0": 0.0572865145
+    },
+    "naive_raw": {
+     "0.1": 0.0100302721,
+     "0.3": 0.0270557766,
+     "0.5": 0.0379183536,
+     "1.0": 0.0499015158
+    }
+   },
+   "rest_noise": {
+    "deming_lambda_ohm2": 0.125703388,
+    "sigma_i": 0.478256058,
+    "sigma_v": 0.169564124
+   }
+  },
+  "r_eff_pu": {
+   "hi": 0.0988951103,
+   "lo": 0.0850280579,
+   "mid": 0.0907776881
+  },
+  "r_eff_pu_ci95_outer": {
+   "hi": 0.107948759,
+   "lo": 0.0747683608
+  },
+  "r_eff_pu_definition": "lo/hi = min/max of the held-aware pooled R_eff over the 0.3, 0.5, 1.0 s windows, mid = 0.5 s window",
+  "rc": {
+   "identified": false,
+   "r1_pu": 0.122610925,
+   "tau1_s": 29.9980737
+  },
+  "rc_detail": {
+   "drop_one_track": {
+    "track_0": {
+     "r0_ohm": 0.0552611192,
+     "r1_ohm": 0.0634745812,
+     "tau1_s": 29.9980737
+    },
+    "track_1": {
+     "r0_ohm": 0.0364498938,
+     "r1_ohm": 0.0269729958,
+     "tau1_s": 1.00006421
+    },
+    "track_10": {
+     "r0_ohm": 0.0546070172,
+     "r1_ohm": 0.0641720554,
+     "tau1_s": 29.9980737
+    },
+    "track_100": {
+     "r0_ohm": 0.0598254707,
+     "r1_ohm": 0.0654145821,
+     "tau1_s": 17.47332
+    },
+    "track_103": {
+     "r0_ohm": 0.0548640796,
+     "r1_ohm": 0.0642933649,
+     "tau1_s": 29.9980737
+    }
+   },
+   "free_tau_diagnostic": {
+    "best_tau_s": 30.0,
+    "r0_ohm": 0.056116486,
+    "r1_ohm": 0.0639793736,
+    "rmse_at_tau": {
+     "0.05": 2.5256,
+     "0.0964": 2.4617,
+     "0.186": 2.3502,
+     "0.358": 2.2301,
+     "0.69": 2.213,
+     "1.33": 2.2214,
+     "18.3": 2.075,
+     "2.56": 2.226,
+     "4.94": 2.2028,
+     "9.52": 2.1488
+    },
+    "rmse_in_sample_v": 2.02541185
+   },
+   "identified": false,
+   "identified_note": "tau and R1 are taken as IDENTIFIED only if the pooled tau is off both bounds and the drop-one-track refits agree within 3x; otherwise the slow/fast split is not supported by the data",
+   "r0_ohm": 0.056116376,
+   "r0_plus_r1_ohm": 0.120093544,
+   "r0_pu": 0.107545879,
+   "r1_ohm": 0.0639771681,
+   "rmse_in_sample_v": 2.02541686,
+   "tau1_s": 29.9980737,
+   "tau_at_bound": true,
+   "tau_bounds_s": [
+    1.0,
+    30.0
+   ]
+  },
+  "temperature": "NOT FITTED: tracks span 20-34 C, one band per track, no cold data. Toy keeps the generic Arrhenius R0(T) (assumption).",
+  "track_bases": {
+   "median_bus_v_by_track": {
+    "track_0": 348.16,
+    "track_1": 345.705,
+    "track_10": 351.21,
+    "track_100": 346.13,
+    "track_103": 352.4
+   },
+   "peak_discharge_power_w_by_track": {
+    "track_0": 169274.112,
+    "track_1": 193060.014,
+    "track_10": 232306.791,
+    "track_100": 142292.676,
+    "track_103": 228820.68
+   }
+  },
+  "v_nom": 348.16
+ },
+ "scaling": {
+  "current_scale_factor": 0.324720024,
+  "default_r_pu": 0.0907776881,
+  "i_base_toy": 216.666667,
+  "i_chg_lim_toy_a": [
+   63.3496294,
+   63.383725,
+   63.0768646,
+   62.9745778,
+   62.9745778,
+   62.9745778,
+   42.7899811,
+   62.9745778,
+   62.9745778,
+   62.9745778,
+   40.3350977
+  ],
+  "i_dis_lim_toy_a": [
+   85.1519812,
+   144.156207,
+   180.758324,
+   165.53415,
+   165.53415,
+   165.53415,
+   125.06267,
+   165.53415,
+   165.53415,
+   165.53415,
+   235.293753
+  ],
+  "motor_consistency": {
+   "consistency_rule": "scaled max discharge limit must be <= the motor's 250 A and >= 125 A (else it either exceeds the motor or throttles it far below its rating)",
+   "consistent_with_toy_motor": true,
+   "headroom_fraction_of_motor_limit": 0.941175011,
+   "max_scaled_i_chg_a": 63.383725,
+   "max_scaled_i_dis_a": 235.293753,
+   "regen_over_discharge_current": 0.269381249,
+   "toy_motor_i_lim_a": 250.0
+  },
+  "not_preserved": [
+   "thermal mass",
+   "absolute energy (q_ah)",
+   "cell time constants are kept in seconds",
+   "temperature dependence (generic Arrhenius R0(T), assumption)"
+  ],
+  "ocv_scale_factor": 0.861672794,
+  "ocv_toy_note": "Battery() has a fixed generic OCV table (about 302 V at SOC 0.5 to 332 V at 0.9); the fitted real OCV is much FLATTER (about 1.2 % over SOC 0.6 to 0.98). It cannot be passed through Battery(...) kwargs.",
+  "ocv_toy_v_at_soc": {
+   "0.6": 301.353508,
+   "0.8": 302.948079,
+   "0.98": 304.072945
+  },
+  "p_base_toy_w": 65000.0,
+  "r_total_toy_ohm": {
+   "hi": 0.136931691,
+   "lo": 0.117731157,
+   "mid": 0.125692184
+  },
+  "rc_source": "generic toy RC kept (fitted R1/tau NOT identified)",
+  "v_toy": 300.0
+ },
+ "scaling_sensitivity": {
+  "31100": {
+   "current_scale_factor": 0.155366042,
+   "default_r_pu": 0.0907776881,
+   "i_base_toy": 103.666667,
+   "i_chg_lim_toy_a": [
+    30.3103611,
+    30.3266746,
+    30.1798537,
+    30.1309134,
+    30.1309134,
+    30.1309134,
+    20.4733602,
+    30.1309134,
+    30.1309134,
+    30.1309134,
+    19.2987929
+   ],
+   "i_dis_lim_toy_a": [
+    40.7419479,
+    68.9732007,
+    86.4859056,
+    79.2017241,
+    79.2017241,
+    79.2017241,
+    59.8376774,
+    79.2017241,
+    79.2017241,
+    79.2017241,
+    112.579011
+   ],
+   "motor_consistency": {
+    "consistency_rule": "scaled max discharge limit must be <= the motor's 250 A and >= 125 A (else it either exceeds the motor or throttles it far below its rating)",
+    "consistent_with_toy_motor": false,
+    "headroom_fraction_of_motor_limit": 0.450316044,
+    "max_scaled_i_chg_a": 30.3266746,
+    "max_scaled_i_dis_a": 112.579011,
+    "regen_over_discharge_current": 0.269381249,
+    "toy_motor_i_lim_a": 250.0
+   },
+   "not_preserved": [
+    "thermal mass",
+    "absolute energy (q_ah)",
+    "cell time constants are kept in seconds",
+    "temperature dependence (generic Arrhenius R0(T), assumption)"
+   ],
+   "ocv_scale_factor": 0.861672794,
+   "ocv_toy_note": "Battery() has a fixed generic OCV table (about 302 V at SOC 0.5 to 332 V at 0.9); the fitted real OCV is much FLATTER (about 1.2 % over SOC 0.6 to 0.98). It cannot be passed through Battery(...) kwargs.",
+   "ocv_toy_v_at_soc": {
+    "0.6": 301.353508,
+    "0.8": 302.948079,
+    "0.98": 304.072945
+   },
+   "p_base_toy_w": 31100.0,
+   "r_total_toy_ohm": {
+    "hi": 0.286191638,
+    "lo": 0.246061904,
+    "mid": 0.262700705
+   },
+   "rc_source": "generic toy RC kept (fitted R1/tau NOT identified)",
+   "v_toy": 300.0
+  },
+  "65000": {
+   "current_scale_factor": 0.324720024,
+   "default_r_pu": 0.0907776881,
+   "i_base_toy": 216.666667,
+   "i_chg_lim_toy_a": [
+    63.3496294,
+    63.383725,
+    63.0768646,
+    62.9745778,
+    62.9745778,
+    62.9745778,
+    42.7899811,
+    62.9745778,
+    62.9745778,
+    62.9745778,
+    40.3350977
+   ],
+   "i_dis_lim_toy_a": [
+    85.1519812,
+    144.156207,
+    180.758324,
+    165.53415,
+    165.53415,
+    165.53415,
+    125.06267,
+    165.53415,
+    165.53415,
+    165.53415,
+    235.293753
+   ],
+   "motor_consistency": {
+    "consistency_rule": "scaled max discharge limit must be <= the motor's 250 A and >= 125 A (else it either exceeds the motor or throttles it far below its rating)",
+    "consistent_with_toy_motor": true,
+    "headroom_fraction_of_motor_limit": 0.941175011,
+    "max_scaled_i_chg_a": 63.383725,
+    "max_scaled_i_dis_a": 235.293753,
+    "regen_over_discharge_current": 0.269381249,
+    "toy_motor_i_lim_a": 250.0
+   },
+   "not_preserved": [
+    "thermal mass",
+    "absolute energy (q_ah)",
+    "cell time constants are kept in seconds",
+    "temperature dependence (generic Arrhenius R0(T), assumption)"
+   ],
+   "ocv_scale_factor": 0.861672794,
+   "ocv_toy_note": "Battery() has a fixed generic OCV table (about 302 V at SOC 0.5 to 332 V at 0.9); the fitted real OCV is much FLATTER (about 1.2 % over SOC 0.6 to 0.98). It cannot be passed through Battery(...) kwargs.",
+   "ocv_toy_v_at_soc": {
+    "0.6": 301.353508,
+    "0.8": 302.948079,
+    "0.98": 304.072945
+   },
+   "p_base_toy_w": 65000.0,
+   "r_total_toy_ohm": {
+    "hi": 0.136931691,
+    "lo": 0.117731157,
+    "mid": 0.125692184
+   },
+   "rc_source": "generic toy RC kept (fitted R1/tau NOT identified)",
+   "v_toy": 300.0
+  }
+ },
+ "schema_version": 1,
+ "sign_convention": "fit and BMS use DISCHARGE POSITIVE (I_dis > 0); TUM files store discharge as NEGATIVE and are multiplied by -1 on load; regen is negative inside the fit",
+ "source": {
+  "files": {
+   "track_0_battery.csv": "dabd7be39583a9cef6c167902ac8e3e3d37390e87c893eba6a5268c8d53deb2f",
+   "track_100_battery.csv": "0e6fb64bed4dc4957cf881478ee83b1f14b9c8c1e6a9bc3b30e1165f0d398ea3",
+   "track_103_battery.csv": "ac52fb98d7d617baa47ab7f176d65c45de11c83a98d142d3afd1ef21127c35fd",
+   "track_10_battery.csv": "6fbbd6284e0171cd601015f30889a5d7f27e9055332680ff60eb54c647e3d482",
+   "track_1_battery.csv": "7c0b1f284d6fcdb4565f13006a2e9f2cec2beea38339af050920ccee108f72ef"
+  },
+  "filters": {
+   "block_rows": 600,
+   "boot_seed": 20240611,
+   "held_voltage_run_rows": 4,
+   "n_boot": 200,
+   "rest_current_a": 5.0,
+   "soc_jump_points": 5.0,
+   "tau_bounds_s": [
+    1.0,
+    30.0
+   ],
+   "temp_sentinel_c": -20.0
+  },
+  "fit_hash": "bc86747515a60423047df836beee8005afe33aeb79db3aa47e42e0b51307f751",
+  "n_tracks": 5,
+  "original_full_csv_sha256": {
+   "track_0.csv": "d522efb2cf381ca5fb9f4dcc557385034b869e34f32fc77b5ebfa49d41e99ec7",
+   "track_1.csv": "738767d6efae44d1ea20546b2e0c115fceb06eb9a9c67f2f129b80864aa3cdef",
+   "track_10.csv": "6640266214c950dba0dd4719e1f14c27c3872c26fa925198de24d02f106b0db0",
+   "track_100.csv": "c53a957d82537f383a08e7009b9fe290c0d5fdfae0673c76d2189bfa63bd17dd",
+   "track_103.csv": "9048a11136e9e07fe51319512a617292f6bf3719e994bb084ba48c991d957029"
+  }
+ },
+ "status": "ok",
+ "toy_battery_kwargs": {
+  "i_chg_max": 63.383725,
+  "i_dis_max": 235.293753,
+  "n_series": 80,
+  "q_ah": 60.0,
+  "r0_cell": 0.00149383824,
+  "r1_cell": 0.0006,
+  "r_bus": 0.005,
+  "tau1": 20.0
+ },
+ "toy_battery_kwargs_alt_p_base_31100": {
+  "i_chg_max": 30.3266746,
+  "i_dis_max": 112.579011,
+  "n_series": 80,
+  "q_ah": 60.0,
+  "r0_cell": 0.00320644476,
+  "r1_cell": 0.0006,
+  "r_bus": 0.005,
+  "tau1": 20.0
+ },
+ "validation": {
+  "best_baseline": "const_r",
+  "fit_minus_best_baseline_v": {
+   "folds_fit_wins": 4,
+   "mean": -0.758174219,
+   "n_folds": 5,
+   "sd": 2.68653081
+  },
+  "glitches_removed": {
+   "track_0": {
+    "held_voltage_rows_in_runs_ge4": 7,
+    "held_voltage_runs_ge4_rows": 1,
+    "longest_held_voltage_run_rows": 8,
+    "n_rows": 2830,
+    "repeated_current_fraction": 0.5967,
+    "repeated_current_rows_total": 1688,
+    "repeated_voltage_fraction": 0.0491,
+    "repeated_voltage_rows_total": 139,
+    "soc_glitch_row_ranges": [],
+    "soc_glitch_samples_removed": 0,
+    "soc_jumps_over_5_points_raw": 0,
+    "soc_samples": 680,
+    "temp_sentinel_row_ranges": [],
+    "temp_sentinel_rows_invalidated": 0,
+    "voltage_current_values_altered": 0
+   },
+   "track_1": {
+    "held_voltage_rows_in_runs_ge4": 60,
+    "held_voltage_runs_ge4_rows": 15,
+    "longest_held_voltage_run_rows": 8,
+    "n_rows": 17960,
+    "repeated_current_fraction": 0.6593,
+    "repeated_current_rows_total": 11841,
+    "repeated_voltage_fraction": 0.0571,
+    "repeated_voltage_rows_total": 1026,
+    "soc_glitch_row_ranges": [
+     [
+      3065,
+      3164
+     ],
+     [
+      7005,
+      7144
+     ]
+    ],
+    "soc_glitch_samples_removed": 240,
+    "soc_jumps_over_5_points_raw": 4,
+    "soc_samples": 3339,
+    "temp_sentinel_row_ranges": [
+     [
+      4711,
+      4720
+     ]
+    ],
+    "temp_sentinel_rows_invalidated": 10,
+    "voltage_current_values_altered": 0
+   },
+   "track_10": {
+    "held_voltage_rows_in_runs_ge4": 451,
+    "held_voltage_runs_ge4_rows": 80,
+    "longest_held_voltage_run_rows": 10,
+    "n_rows": 8410,
+    "repeated_current_fraction": 0.4105,
+    "repeated_current_rows_total": 3452,
+    "repeated_voltage_fraction": 0.1041,
+    "repeated_voltage_rows_total": 875,
+    "soc_glitch_row_ranges": [
+     [
+      0,
+      35
+     ],
+     [
+      7227,
+      7240
+     ]
+    ],
+    "soc_glitch_samples_removed": 50,
+    "soc_jumps_over_5_points_raw": 3,
+    "soc_samples": 4161,
+    "temp_sentinel_row_ranges": [],
+    "temp_sentinel_rows_invalidated": 0,
+    "voltage_current_values_altered": 0
+   },
+   "track_100": {
+    "held_voltage_rows_in_runs_ge4": 3,
+    "held_voltage_runs_ge4_rows": 1,
+    "longest_held_voltage_run_rows": 4,
+    "n_rows": 2930,
+    "repeated_current_fraction": 0.3254,
+    "repeated_current_rows_total": 953,
+    "repeated_voltage_fraction": 0.0427,
+    "repeated_voltage_rows_total": 125,
+    "soc_glitch_row_ranges": [],
+    "soc_glitch_samples_removed": 0,
+    "soc_jumps_over_5_points_raw": 0,
+    "soc_samples": 1326,
+    "temp_sentinel_row_ranges": [],
+    "temp_sentinel_rows_invalidated": 0,
+    "voltage_current_values_altered": 0
+   },
+   "track_103": {
+    "held_voltage_rows_in_runs_ge4": 99,
+    "held_voltage_runs_ge4_rows": 9,
+    "longest_held_voltage_run_rows": 68,
+    "n_rows": 3650,
+    "repeated_current_fraction": 0.4179,
+    "repeated_current_rows_total": 1525,
+    "repeated_voltage_fraction": 0.0707,
+    "repeated_voltage_rows_total": 258,
+    "soc_glitch_row_ranges": [],
+    "soc_glitch_samples_removed": 0,
+    "soc_jumps_over_5_points_raw": 0,
+    "soc_samples": 800,
+    "temp_sentinel_row_ranges": [],
+    "temp_sentinel_rows_invalidated": 0,
+    "voltage_current_values_altered": 0
+   }
+  },
+  "loo_rmse_v": {
+   "const_r": 3.82152976,
+   "const_v": 6.17094927,
+   "fit": 2.97970441,
+   "generic": 13.2109
+  },
+  "per_fold_rmse_v": {
+   "const_r": {
+    "track_0": 1.94080815,
+    "track_1": 5.27104366,
+    "track_10": 3.64062353,
+    "track_100": 1.05656403,
+    "track_103": 5.20570299
+   },
+   "const_v": {
+    "track_0": 4.75377236,
+    "track_1": 7.4307922,
+    "track_10": 5.84346555,
+    "track_100": 4.9680636,
+    "track_103": 7.33214186
+   },
+   "fit": {
+    "track_0": 1.45391812,
+    "track_1": 3.54751546,
+    "track_10": 1.31312223,
+    "track_100": 4.8094386,
+    "track_103": 2.19987687
+   },
+   "generic": {
+    "track_0": 5.26237758,
+    "track_1": 13.3091247,
+    "track_10": 8.71671828,
+    "track_100": 10.849624,
+    "track_103": 21.7742614
+   }
+  },
+  "protocol": "leave-one-track-out on 5 tracks; RMSE of predicted pack voltage from SOC and current on valid rows; overall = sqrt(mean fold MSE); all models see the same hold-aware current; baselines: const_v = training mean voltage, const_r = a - R_eff(0.5 s)*I, generic = battery.Battery OCV/R0/Rc/R1/tau scaled to the real pack (one voltage gain from the training mean, per-unit resistances at 65 kW toy base)",
+  "status_reason": "fit RMSE 2.980 V beats the best baseline (const_r, 3.822 V)"
+ }
+}

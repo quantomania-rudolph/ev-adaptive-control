@@ -1,0 +1,7 @@
+# Full-rate run outputs are ~18 MB each and regenerate in ~45 s: python run_exp.py ...
+runs/
+__pycache__/
+*.pyc
+env/
+.venv/
+.pytest_cache/

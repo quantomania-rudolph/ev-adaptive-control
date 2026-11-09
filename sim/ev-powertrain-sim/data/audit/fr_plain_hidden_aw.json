@@ -1,0 +1,125 @@
+{
+  "name": "fr_plain_hidden_aw",
+  "mode": "aw",
+  "event": true,
+  "governor": false,
+  "battery": false,
+  "vdc_aware": false,
+  "bms_aware": false,
+  "oracle_ceiling": false,
+  "seed": 1,
+  "identity": false,
+  "T_END": 8.0,
+  "tau": 0.0001,
+  "steps": 80000,
+  "wall_s": 27.5,
+  "fit_path": null,
+  "sensor_cfg": {
+    "tau": 0.0001,
+    "p": 3,
+    "identity": false,
+    "i_range_a": 400.0,
+    "adc_bits": 12,
+    "i_gain_err": 0.01,
+    "i_offset_a": 2.0,
+    "i_noise_lsb": 1.0,
+    "two_sensor": false,
+    "theta_offset_rad": 0.017453292519943295,
+    "theta_noise_rad": 0.005235987755982988,
+    "theta_ripple_rad": 0.003490658503988659,
+    "pll_wn": 300.0,
+    "pll_zeta": 0.707,
+    "vdc_range_v": 500.0,
+    "vdc_gain_err": 0.005,
+    "vdc_noise_v": 0.5,
+    "vdc_corner_hz": 500.0,
+    "ref_quant": 0.0,
+    "ref_hold_s": 0.0
+  },
+  "inverter_cfg": {
+    "tau": 0.0001,
+    "delay_steps": 1,
+    "dead_time_s": 2e-06,
+    "device_drop_v": 1.5,
+    "smooth_band_a": 1.0,
+    "compensation": 0.7,
+    "enabled": true
+  },
+  "bms_cfg": {
+    "period_s": 0.05,
+    "latency_s": 0.02,
+    "quant_a": 1.0,
+    "rel_err": 0.05,
+    "enabled": true
+  },
+  "belief_cfg": {
+    "dR_range": [
+      -0.15,
+      0.4
+    ],
+    "dL_range": [
+      0.0,
+      0.25
+    ],
+    "dJ_range": [
+      -0.2,
+      0.2
+    ],
+    "dpsi_range": [
+      -0.1,
+      0.1
+    ],
+    "psi_start_frac": 0.7,
+    "psi_range": [
+      0.03,
+      0.1
+    ],
+    "exact": false
+  },
+  "controller_cfg": {
+    "mode": "aw",
+    "governor": false,
+    "vdc_aware": false,
+    "bms_aware": false,
+    "angle_advance": true,
+    "delay_steps": 1,
+    "gamma": 2e-05,
+    "k_i": 3.0,
+    "sigma": 2.0,
+    "d_gain_by_L": false,
+    "clamp_psi": false,
+    "i_lim": 250.0,
+    "speed_bw": 20.0,
+    "gov_factor": 0.75,
+    "tau": 0.0001,
+    "p": 3,
+    "eta": 0.9
+  },
+  "belief_draws": {
+    "dR": -0.08723144086534697,
+    "dL": 0.21334092630759519,
+    "dJ": 0.020427136841778465,
+    "dpsi": -0.05062322161713626
+  },
+  "beliefs": {
+    "R": 0.016429834064423752,
+    "Ld": 0.0004489361427338102,
+    "Lq": 0.001456009111569114,
+    "psi_name": 0.062658867373269,
+    "J": 0.5498367541444555,
+    "psi_hat0": 0.0462,
+    "psi_range": [
+      0.03,
+      0.1
+    ]
+  },
+  "psi_true": 0.066,
+  "scenario": {
+    "t_event": [
+      4.5,
+      5.5
+    ],
+    "u_event": 25.0
+  },
+  "gem": "3.0.3"
+}
